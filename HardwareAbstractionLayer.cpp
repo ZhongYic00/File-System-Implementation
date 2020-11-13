@@ -23,6 +23,3 @@ int HardwareAbstractionLayer::write(const int LBA, const ByteArray _data, const 
 	}
 	return Unknown;
 }
-size_t HardwareAbstractionLayer::deviceSize() const{
-	return sizeof(blockDevice);
-}

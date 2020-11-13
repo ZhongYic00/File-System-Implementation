@@ -16,7 +16,7 @@ public:
 	}
 	int read(const int LBA, const size_t _length, const ByteArray _data) const;
 	int write(const int LBA, const ByteArray _data, const size_t _length);
-	size_t deviceSize() const;
+	inline size_t deviceSize() const;
 private:
 	static u8 blockDevice[DEVICESIZE];
 	inline  static int _addressJudge(const int &LBA, const size_t &_length);
@@ -33,3 +33,6 @@ private:
 	}
 #endif
 };
+inline size_t HardwareAbstractionLayer::deviceSize() const{
+	return sizeof(blockDevice);
+}
