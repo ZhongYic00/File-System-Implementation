@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(FS)
 aux_source_directory(. DIR_SRCS)
+include_directories("include")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   list(REMOVE_ITEM DIR_SRCS "./Interface.cpp")
 endif()
