@@ -9,23 +9,27 @@ class FSNode {
 public:
     FSNode();
     ~FSNode();
-    size_t bodySize();
-    size_t totalSize();
+    inline size_t totalSize();
+    inline size_t metaSize();
     ull directSubnodes();
-    ull subNodes();
+    ull subnodes();
 
 private:
     Access access;
     ExtendedMap extAttributes;
     TimeManager tm;
-    size_t metaSize;
+    size_t _metaSize;
+
+protected:
     size_t _totalSize;
-    ull subnodes;
+    ull _subnodes;
 
     void updateMetaSize();
-    virtual void updateBodySize() = 0;
     virtual void updateTotalSize() = 0;
     virtual void updateSubnodes() = 0;
 };
+
+size_t FSNode::metaSize() { return _metaSize; }
+size_t FSNode::totalSize() { return _totalSize; }
 
 #endif // FSNODE_H
