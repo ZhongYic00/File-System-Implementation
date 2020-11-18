@@ -1,6 +1,6 @@
 #include "include/HardwareAbstractionLayer.h"
 u8 HardwareAbstractionLayer::blockDevice[DEVICESIZE];
-inline int HardwareAbstractionLayer::_addressJudge(const int& LBA, const size_t& _length)
+inline int HardwareAbstractionLayer::_addressJudge(const LBA_t& LBA, const size_t& _length)
 {
     // need optimize
     if (LBA < 0 || LBA >= DEVICESIZE)
@@ -12,7 +12,7 @@ inline int HardwareAbstractionLayer::_addressJudge(const int& LBA, const size_t&
     else
         return 0;
 }
-int HardwareAbstractionLayer::read(const int LBA, const size_t _length, const ByteArray _data) const
+int HardwareAbstractionLayer::read(const LBA_t LBA, const size_t _length, const ByteArray _data) const
 {
     if (!_addressJudge(LBA, _length))
         return _addressJudge(LBA, _length);
@@ -22,7 +22,7 @@ int HardwareAbstractionLayer::read(const int LBA, const size_t _length, const By
     }
     return Unknown;
 }
-int HardwareAbstractionLayer::write(const int LBA, const ByteArray _data, const size_t _length)
+int HardwareAbstractionLayer::write(const LBA_t LBA, const ByteArray _data, const size_t _length)
 {
     if (!_addressJudge(LBA, _length))
         return _addressJudge(LBA, _length);
