@@ -1,7 +1,9 @@
 #ifndef EXTENDEDMAP_H
 #define EXTENDEDMAP_H
 #include <map>
+#include <string>
 using std::map, std::string;
+//using std::;
 class ExtendedMap {
 public:
     ExtendedMap();
