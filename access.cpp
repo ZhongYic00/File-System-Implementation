@@ -31,17 +31,3 @@ string Access::info()
         + accessDecode(others);
 }
 //Get information of a file/directory.
-
-int main()
-{
-    /*
-	cout << sizeof(Access) << endl;
-	Access a(0, 7, 6, 5);
-	Access b(1, 4, 3, 2);
-	Access c(0, 1, 1, 1);
-	cout << a.info() << endl;
-	cout << b.info() << endl;
-	cout << c.info() << endl;
-	*/
-    return 0;
-}
