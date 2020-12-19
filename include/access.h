@@ -12,12 +12,13 @@ public:
     Access();
     Access(NodeType t, AccessGroup o, AccessGroup r, AccessGroup oth);
     string info();
+    void chmod(string s);
 
 private:
 	NodeType type : 1;
 	AccessGroup owner : 3;
 	AccessGroup root : 3;
-	AccessGroup others : 3;
+	AccessGroup other : 3;
 };
 
 #endif // ACCESS_H
