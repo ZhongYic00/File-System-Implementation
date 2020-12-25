@@ -1,9 +1,9 @@
 #include "include/HardwareAbstractionLayer.h"
 u8 HardwareAbstractionLayer::blockDevice[DEVICESIZE];
-inline int HardwareAbstractionLayer::_addressJudge(const LBA_t& LBA, const size_t& _length)
+inline int HardwareAbstractionLayer::_addressJudge(const LBA_t& LBA, const LBA_t& _length)
 {
-    // need optimize
-    if (LBA < 0 || LBA >= DEVICESIZE)
+    // need optimize, bug: unsigned num & smaller than 0
+    if (LBA >= DEVICESIZE)
         return LBAIllegal;
     else if (_length <= 0)
         return LengthIllegal;
@@ -12,22 +12,22 @@ inline int HardwareAbstractionLayer::_addressJudge(const LBA_t& LBA, const size_
     else
         return 0;
 }
-int HardwareAbstractionLayer::read(const LBA_t LBA, const size_t _length, const ByteArray _data) const
+int HardwareAbstractionLayer::read(const LBA_t LBA, const LBA_t _length, const BytePtr _data) const
 {
     if (!_addressJudge(LBA, _length))
         return _addressJudge(LBA, _length);
     else {
-        memcpy(_data, (u8*)blockDevice + LBA, _length); // memcpy(dst,src,size)
+        memcpy(_data, (u8*)blockDevice + LBA * BLOCKSIZE_BYTE, _length * BLOCKSIZE_BYTE); // memcpy(dst,src,size)
         return 0;
     }
     return Unknown;
 }
-int HardwareAbstractionLayer::write(const LBA_t LBA, const ByteArray _data, const size_t _length)
+int HardwareAbstractionLayer::write(const LBA_t LBA, const BytePtr _data, const LBA_t _length)
 {
     if (!_addressJudge(LBA, _length))
         return _addressJudge(LBA, _length);
     else {
-        memcpy((u8*)blockDevice + LBA, _data, _length);
+        memcpy((u8*)blockDevice + LBA * BLOCKSIZE_BYTE, _data, _length * BLOCKSIZE_BYTE);
         return 0;
     }
     return Unknown;

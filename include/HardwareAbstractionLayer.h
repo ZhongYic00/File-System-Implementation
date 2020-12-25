@@ -1,9 +1,8 @@
+#ifndef HARDWAREABSTRACTIONLAYER_H
+#define HARDWAREABSTRACTIONLAYER_H
+#include "constants.h"
 #include <bits/stdc++.h>
-const long long GB = 1 << 20;
-const long long DEVICESIZE = 5 * GB;
-typedef char u8;
-typedef char* ByteArray;
-typedef unsigned long long LBA_t;
+const long long DEVICESIZE = 500 * MB;
 class HardwareAbstractionLayer {
 public:
     enum ErrorInfo {
@@ -16,13 +15,13 @@ public:
     {
         //		memset(blockDevice,0,sizeof(blockDevice));
     }
-    int read(const LBA_t LBA, const size_t _length, const ByteArray _data) const; //read data at LBA of length _length, write result to _data(size of _data must be more than _length)
-    int write(const LBA_t LBA, const ByteArray _data, const size_t _length); //write data to LBA of size _length, data is passed by _data
+    int read(const LBA_t LBA, const LBA_t _length, const BytePtr _data) const; //read data at LBA of length _length(measured by block), write result to _data(size of _data must be more than _length)
+    int write(const LBA_t LBA, const BytePtr _data, const LBA_t _length); //write data to LBA of size _length(measured by block), data is passed by _data
     inline size_t deviceSize() const;
 
 private:
     static u8 blockDevice[DEVICESIZE];
-    inline static int _addressJudge(const LBA_t& LBA, const size_t& _length);
+    inline static int _addressJudge(const LBA_t& LBA, const LBA_t& _length);
 #ifndef RELEASE
     void _MemoryTest() const
     {
@@ -41,3 +40,5 @@ inline size_t HardwareAbstractionLayer::deviceSize() const
 {
     return sizeof(blockDevice);
 }
+
+#endif
