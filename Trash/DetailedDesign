@@ -1,0 +1,34 @@
+HAL<=Buffer（流量整形）<=核心层读写流
+二级指针：inode与LBA之间建立联系?有助于延迟写入、空间分配，有助于减少写入
+Everything is a file
+metadata也是一个小文件，需要合理组织
+
+底层空间分配：extent-tree，区间操作、平衡二叉树或线段树
+元数据写入：inode-map间接映射，延迟写入，通过extent-tree获取空间
+数据写入：extent-tree获取空间，类似buddy的拆分方式（待考察，可能可以均摊碎片），由于数据太整而存不下的指针以inline方式存储？每个file要么对应一组指针，要么对应一个inline extent，但对文件进行部分修改操作仍有问题？等效为更新元数据时对inline extent进行更新
+空间释放etc. ：extent-tree对最小粒度的block维护实际占用（大粒度block都为全占用），从而进行GC
+inode-map：
+superblock：起始块为主superblock，末尾块为副superblock，更新时先主后副，superblock使用checksum？superblock中除了文件系统summary，还需存储extent-tree位置、inode-map位置（作为特殊的data-block，强制使用块内链表）
+
+数据分为两类：大数据、小数据，分别进行读写操作。inode及inline block通过小数据接口进行操作，普通extent等通过大数据接口进行。
+
+目录节点：目录列表视为普通文件处理，目录节点的dataLBA指向目录列表。
+
+extentAutoRead自动根据LBA判断类型，调用large/smallDataRead函数
+largeDataRead自动读取属于该extent-group的所有extent，合并为一个bytearray返回
+
+LBA：一个LBA_t的最低（高？）4/8bits表示块内位置
+若256x16B，则用256bits(32Bytes)记录何处为起始粒，最终每个4Kblock中可存储254x16B
+此处为方便查找，将256bits分为4x8Byte，每8Byte高低位反序存储。
+每个block头部2bit为1，如此由于large-data的LBA高8bit为0，故large-data extent的7~8bit为0，可辅助判断异常
+
+保存时的先后顺序：extent-tree中需要标明inode-map及自身使用的控件，因此进入保存阶段后inode-map冻结，extent-tree的大小可以直接计算得出（保存的时候不保留二叉树结构，化为线性序列，则extent-tree最多占用2个端点）
+inode-map也作为pure data，通过extent-tree获取空间并写入。（？）
+
+保存时避免数据丢失：extent-tree保存log（预留足够大），version N（此次运行前最后版本），version N-1。保存时先在vN-1位置开始写入vN（相当于向前移动vN），再在其后写入vN+1（当前版本）。每次启动后log从头开始，循环覆写，以防当前版本来不及保存，写满后即进行版本更新。
+
+HAL层加入导出接口，以便进行多次挂载实验。
+
+extent-tree分配规则：每个上层节点保存bitmap，记录子树中所含有的尺寸规格。第一优先级为同等大小分配，第二优先级为更大块拆分分配，第三优先级为拆分为小块分配（存疑，在extent-tree中处理还是直接报错后在外部处理？）
+
+关键问题：各个类的输入输出，为减小开销考虑直接memcpy，但动态分配内存的结构都无法直接memcpy。node类成员inum-count以及inum-recycle如何以保存的数据进行初始化？fuse中write函数似乎支持局部写入，如何处理文件局部修改？保存时如何避免数据丢失？保存时的先后顺序？
