@@ -31,3 +31,24 @@ string Access::info()
         + accessDecode(others);
 }
 //Get information of a file/directory.
+
+void Access::getHammingCode()
+{
+    checkCode1 = ((type & 1) + (owner >> 2 & 1) + (owner & 1) + (root >> 2 & 1) + (root & 1) + (other >> 1 & 1)) % 2;
+    checkCode2 = ((type & 1) + (owner >> 1 & 1) + (owner & 1) + (root >> 1 & 1) + (root & 1) + (other & 1)) % 2;
+    checkCode3 = ((owner >> 2 & 1) + (owner >> 1 & 1) + (owner & 1) + (other >> 2 & 1) + (owner >> 1 & 1) + (other & 1)) % 2;
+    checkCode4 = ((root >> 2 & 1) + (root >> 1 & 1) + (root & 1) + (other >> 2 & 1) + (owner >> 1 & 1) + (other & 1)) % 2;
+}
+//To get HammingCode.
+
+bool Access::checkLegitimacy()
+{
+    return !(((checkCode1 & 1) + (checkCode2 & 1) + (type & 1) + (checkCode3 & 1) + (owner >> 2 & 1) + (owner >> 1 & 1) + (owner & 1) + (root >> 2 & 1) + (root >> 1 & 1) + (root & 1) + (other >> 2 & 1) + (owner >> 1 & 1) + (other & 1)) % 2);
+}
+//Check whether a node is legal or not.
+
+bool Access::isDirectory()
+{
+    return type;
+}
+//To judge whether this node is a directory.
