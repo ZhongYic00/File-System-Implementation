@@ -41,14 +41,25 @@ void Access::getHammingCode()
 }
 //To get HammingCode.
 
-bool Access::checkLegitimacy()
+bool Access::isValid()
 {
     return !(((checkCode1 & 1) + (checkCode2 & 1) + (type & 1) + (checkCode3 & 1) + (owner >> 2 & 1) + (owner >> 1 & 1) + (owner & 1) + (root >> 2 & 1) + (root >> 1 & 1) + (root & 1) + (other >> 2 & 1) + (owner >> 1 & 1) + (other & 1)) % 2);
 }
-//Check whether a node is legal or not.
+//Check whether a node is valid or not.
 
 bool Access::isDirectory()
 {
     return type;
 }
 //To judge whether this node is a directory.
+
+int chmod(string s)
+{
+	if (!isValid()) return 1;
+    owner = s[0] - '0';
+    root = s[1] - '0';
+    other = s[2] - '0';
+    getHammingCode();
+    return 0;
+}
+//Change mod.

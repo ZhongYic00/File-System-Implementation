@@ -13,11 +13,9 @@ public:
     Access();
     Access(NodeType t, AccessGroup o, AccessGroup r, AccessGroup oth);
     string info();
-/*
-    void chmod(string s);
-*/
     void getHammingCode();
     bool checkLegitimacy();
+    int chmod(string s);
     inline bool isDirectory() const;
 
 private:
