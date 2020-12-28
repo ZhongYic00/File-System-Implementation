@@ -1,8 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
-#define GB (1 << 20)
 #define KB (1 << 10)
 #define MB (KB << 10)
+#define GB (MB << 10)
 #define BLOCKSIZE_KB (4)
 #define BLOCKSIZE_BYTE (BLOCKSIZE_KB * KB)
 #define DEVICE_SIZE (5 * GB)
