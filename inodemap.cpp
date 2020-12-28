@@ -4,7 +4,7 @@ using namespace std;
 
 InodeMap::InodeMap(const ByteArray& d)
 {
-    //Function body here
+    
 }
 //Notes here
 

@@ -47,12 +47,6 @@ bool Access::isValid()
 }
 //Check whether a node is valid or not.
 
-bool Access::isDirectory()
-{
-    return type;
-}
-//To judge whether this node is a directory.
-
 int chmod(string s)
 {
 	if (!isValid()) return 1;

@@ -28,4 +28,7 @@ private:
 	AccessGroup root 	 : 3;
 	AccessGroup other 	 : 3;
 };
+
+bool Access::isDirectory() {return type;}
+//To judge whether this node is a directory.
 #endif // ACCESS_H

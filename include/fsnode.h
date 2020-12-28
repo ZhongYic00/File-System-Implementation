@@ -55,7 +55,7 @@ private:
 
 //size_t FSNode::metaSize() const { return _metaSize; }
 size_t FSNode::totalSize() const { return _totalSize; }
-//bool FSNode::invalid() const { return access.invalid(); }
-//bool FSNode::isDirectory() const { return access.isDirectory(); }
+bool FSNode::isValid() const { return access.isValid(); }
+bool FSNode::isDirectory() const { return access.isDirectory(); }
 LBA_t FSNode::dataExtentLBA() const { return _dataLBA; }
 #endif // FSNODE_H
