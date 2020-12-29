@@ -8,12 +8,18 @@
 #define _XOPEN_SOURCE 700
 #endif
 
+#include "include/FS.h"
+#include "include/constants.h"
 #include <bits/stdc++.h>
 #include <fuse3/fuse.h>
 
 static void* fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 {
+
     return nullptr;
+}
+static void fs_destroy(void* private_data)
+{
 }
 static int fs_statfs(const char* path, struct statvfs* stbuf)
 {
@@ -22,7 +28,7 @@ static int fs_statfs(const char* path, struct statvfs* stbuf)
 }
 static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_info* fi)
 {
-    stbuf->st_mode = S_IFDIR | 0666;
+    stbuf->st_mode = S_IFDIR | 0777;
     stbuf->st_size = 4096;
     stbuf->st_nlink = 1;
     stbuf->st_uid = 0;
@@ -52,23 +58,49 @@ static int fs_access(const char* path, int)
 {
     return 0;
 }
+static int fs_chmod(const char* path, mode_t mod, struct fuse_file_info* fi)
+{
+    return 0;
+}
+static int fs_mknod(const char* path, mode_t mod, dev_t dev)
+{
+    return 0;
+}
+static int fs_mkdir(const char* path, mode_t mod)
+{
+    return 0;
+}
+static int fs_rmnod(const char* path)
+{
+    return 0;
+}
+static int fs_rmdir(const char* path)
+{
+    return 0;
+}
 static struct fuse_operations fs_operations = {
     .getattr = fs_getattr,
+    .mknod = fs_mknod,
+    .mkdir = fs_mkdir,
+    .unlink = fs_rmnod,
+    .rmdir = fs_rmdir,
+    .chmod = fs_chmod,
     .open = fs_open,
     .read = fs_read,
     .readdir = fs_readdir,
     .init = fs_init,
+    .destroy = fs_destroy,
     .access = fs_access, /*
-	.mknod = nullptr,
-	.mkdir = nullptr,
-	.unlink = nullptr,
-	.rmdir = nullptr,
-	.rename = nullptr,
-	.chmod = nullptr,
-	.chown = nullptr,
-	.truncate = nullptr,
-	.open =nullptr,
-	.read = nullptr,
-	.write = nullptr,
-	.statfs = fs_statfs,*/
+    .mknod = nullptr,
+    .mkdir = nullptr,
+    .unlink = nullptr,
+    .rmdir = nullptr,
+    .rename = nullptr,
+    .chmod = nullptr,
+    .chown = nullptr,
+    .truncate = nullptr,
+    .open =nullptr,
+    .read = nullptr,
+    .write = nullptr,
+    .statfs = fs_statfs,*/
 };
