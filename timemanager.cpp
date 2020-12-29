@@ -16,6 +16,7 @@ void TimeManager::cTimeChange()
 }
 void TimeManager::mTimeChange()
 {
+    cTimeChange();
     mTime = TimeGet();
 }
 int TimeManager::TimeFactor(time_t t, string s)

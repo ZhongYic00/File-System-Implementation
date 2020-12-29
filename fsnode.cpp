@@ -5,10 +5,16 @@ inum_t FSNode::nodeCount;
 
 FSNode::FSNode()
     : _inum(newNodeNum())
+    , _dataLBA(0)
+    , _totalSize(0)
+    , _refs(1)
 {
 }
 FSNode::FSNode(const inum_t& type)
     : _inum(type)
+    , _dataLBA(0)
+    , _totalSize(0)
+    , _refs(0)
 {
 }
 inum_t FSNode::newNodeNum()
@@ -21,10 +27,6 @@ inum_t FSNode::newNodeNum()
 void FSNode::freeNodeNum(const inum_t& inum)
 {
     freeInum.push(inum);
-}
-void FSNode::updateMetaSize()
-{
-    //totalSize = metaSize + something
 }
 ByteArray FSNode::nodeDataExport() const
 {
