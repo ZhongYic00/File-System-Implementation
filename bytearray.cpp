@@ -1,4 +1,8 @@
 #include "include/bytearray.h"
+ByteArray::ByteArray()
+    : _d(nullptr)
+{
+}
 ByteArray::ByteArray(size_t size, Byte* data)
     : _d(new Byte[size + sizeof(size_t)])
 {
