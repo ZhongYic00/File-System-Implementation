@@ -7,14 +7,14 @@ Access::Access()
     type = 0;
     owner = 0;
     root = 0;
-    others = 0;
+    other = 0;
 }
 Access::Access(NodeType t, AccessGroup o, AccessGroup r, AccessGroup oth)
 {
     type = t;
     owner = o;
     root = r;
-    others = oth;
+    other = oth;
 }
 //Initialization
 
@@ -28,7 +28,7 @@ string Access::info()
     return string(type ? "d" : "-")
         + accessDecode(owner)
         + accessDecode(root)
-        + accessDecode(others);
+        + accessDecode(other);
 }
 //Get information of a file/directory.
 
@@ -47,7 +47,7 @@ bool Access::isValid()
 }
 //Check whether a node is valid or not.
 
-int chmod(string s)
+int Access::chmod(string s)
 {
 	if (!isValid()) return 1;
     owner = s[0] - '0';
