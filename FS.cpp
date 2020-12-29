@@ -113,7 +113,7 @@ LBA_t FS::smallDataWrite(const ByteArray& data, const std::function<void(LBA_t)>
 {
     //write delay
     auto pieces = [](size_t sz) {
-        return (sz >> 4) + sz & 15;
+        return sz / PIECE_SIZE + sz & (PIECE_SIZE - 1);
     }; //count how many pieces is needed
     u8 pcs = pieces(data.length());
     if (writeStackSize + pcs > USABLE_PIECES_PER_BLOCK)
@@ -154,25 +154,18 @@ ByteArray FS::smallDataRead(const LBA_t& addr)
         return x & ((1ULL << ACTUAL_LBA_BITS) - 1);
     };
     HAL.read(standerizeLBA(addr), 1, tmp);
-    unsigned long long bitmap[4] = { reinterpret_cast<unsigned int*>(tmp)[0], reinterpret_cast<unsigned int*>(tmp)[1], reinterpret_cast<unsigned int*>(tmp)[2], reinterpret_cast<unsigned int*>(tmp)[3] };
-    auto findPieces = [&bitmap](u8 index) -> LBA_t {
-        for (int k = 0, j = 0, b = 0; k < 3; k++) { //bugs may occur
-            unsigned long long tmp = bitmap[k];
-            for (int i = 0; i < 64;) {
-                while ((tmp ^ static_cast<unsigned long long>(b)) & 1ULL) { //bugs may occur
-                    i++;
-                    tmp >>= 1;
-                }
-                j++;
-                if (j >= index)
-                    return i - 1 + (k << 6);
-                b ^= 1;
-            }
+    bitset<BITMAP_BITS> bitmap;
+    for (int i = 0; i < BITMAP_BITS / (sizeof(unsigned long) * 8); i++, bitmap <<= sizeof(unsigned long) * 8) {
+        bitmap |= reinterpret_cast<unsigned long*>(tmp)[i];
+    }
+    auto findPieces = [](int index, bitset<BITMAP_BITS> bitmap) -> LBA_t {
+        while (index--) {
+            bitmap[bitmap._Find_first()] = 0;
         }
-        return -1;
+        return bitmap._Find_first();
     }; //return the exact end pos of piece index in an block e.g. findPieces(0)=1, which means the 1st piece occupies (16B) piece 0 and 1
-    LBA_t startPos = findPieces(static_cast<u8>(addr >> ACTUAL_LBA_BITS) - 1) + 1; // >>ACTUAL_LBA_BITS cuts high 8 bits to locate pieces in the block
-    LBA_t len = findPieces(static_cast<u8>(addr >> ACTUAL_LBA_BITS)) - startPos + 1;
+    LBA_t startPos = findPieces((addr >> ACTUAL_LBA_BITS) - 1, bitmap) + 1; // >>ACTUAL_LBA_BITS cuts high 8 bits to locate pieces in the block
+    LBA_t len = findPieces(addr >> ACTUAL_LBA_BITS, bitmap) - startPos + 1;
     auto rt = ByteArray(static_cast<size_t>(len * BLOCKSIZE_BYTE), tmp + (startPos * BLOCKSIZE_BYTE));
     delete[] tmp;
     return rt;
@@ -324,4 +317,33 @@ void FS::createNode(const inum_t& parent, const string& name, const bool& isDire
     saveInode(*nwNode);
     delete ori;
     delete nwNode;
+}
+void FS::freeWriteStack()
+{
+    auto pieces = [](size_t sz) {
+        return sz / PIECE_SIZE + sz & (PIECE_SIZE - 1);
+    }; //count how many pieces is needed
+    auto buffer = new Byte[BLOCKSIZE_BYTE];
+    memset(buffer, 0, BLOCKSIZE_BYTE);
+    //bugs mau occur after crash
+    auto dest = extentTree->allocateExtent(writeStack.size()); //record the reference count on extent-tree
+    std::bitset<BITMAP_BITS> btmp;
+    for (auto buf = buffer + (BITMAP_BITS / 8); !writeStack.empty();) {
+        auto top = writeStack.top();
+        writeStack.pop();
+        //write data
+        memcpy(buf, top.first.d_ptr(), top.first.length());
+        top.second(dest.first);
+        //record bitmap
+        btmp[(buf - buffer) / PIECE_SIZE] = 1; //buf-buffer=delta bytes
+        //next
+        buf += pieces(top.first.length());
+    }
+    //write bitmap
+    for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, buffer += sizeof(unsigned long), btmp >>= sizeof(unsigned long) * 8) {
+        *reinterpret_cast<unsigned long*>(buffer) = btmp.to_ulong();
+    }
+    //write to disk
+    HAL.write(dest, buffer, 1);
+    delete[] buffer;
 }
