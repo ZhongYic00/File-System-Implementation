@@ -22,21 +22,24 @@ public:
     FSNode();
     FSNode(const inum_t& type);
     FSNode(const ByteArray& d);
-    ~FSNode();
+    virtual ~FSNode();
     inline size_t totalSize() const;
     inline size_t metaSize() const;
-    inum_t inum() const;
-    ull directSubnodes() const;
-    ull subnodes() const;
     ByteArray nodeDataExport() const;
+    inline inum_t inum() const;
     inline LBA_t dataExtentLBA() const;
     inline bool invalid() const;
     inline bool isDirectory() const;
+    //ull directSubnodes() const;
+    inline ull refCount() const;
+    void updateDataExtentLBA(const LBA_t& addr);
+
+protected:
+    Access access;
+    //ExtendedMap extAttributes;
+    TimeManager tm;
 
 private:
-    Access access;
-    ExtendedMap extAttributes;
-    TimeManager tm;
     const inum_t _inum;
     static inum_t nodeCount;
     static stack<inum_t> freeInum;
@@ -44,9 +47,9 @@ private:
 protected:
     LBA_t _dataLBA;
     size_t _totalSize;
-    ull _subnodes; //refer to subnode count in dir, hard link count in file
+    ull _refs; //refer to subnode count in dir, hard link count in file
 
-    void updateMetaSize();
+    //void updateMetaSize();
     static void freeNodeNum(const inum_t& inum);
 
 private:
@@ -58,4 +61,6 @@ size_t FSNode::totalSize() const { return _totalSize; }
 bool FSNode::isValid() const { return access.isValid(); }
 bool FSNode::isDirectory() const { return access.isDirectory(); }
 LBA_t FSNode::dataExtentLBA() const { return _dataLBA; }
+ull FSNode::refCount() const { return _refs; }
+inum_t FSNode::inum() const { return _inum; }
 #endif // FSNODE_H
