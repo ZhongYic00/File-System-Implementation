@@ -13,20 +13,39 @@ public:
     void fsInfo() const;
     void fsInit();
     void fsExit();
+    ByteArray readFile(const inum_t& inum); //can only read accessible file data
+    void writeFile(const inum_t& inum, const ByteArray& nwdata); //can only modify accessible file data
+    list<NodeCoreAttr> readDirectory(const inum_t& inum); //return the list of subnodes of specific dir-node
+    LBA_t querySubnodeLBA(const inum_t& parent, const string& name); //return the inum of specific subnode under parent-node
+    void removeNode(const inum_t& parent, const inum_t& node); //remove the node whether it's a file-node or dir-node
+    void createNode(const inum_t& parent, const string& name, const bool& isDirectory); //create a node under 'parent' whose type is specificed by isDirectory, parent must be a dir-node
 
 private:
     HardwareAbstractionLayer HAL;
     Superblock superblock;
     ExtentTree* extentTree;
     InodeMap* inodeMap;
+    stack<std::pair<ByteArray, std::function<void(LBA_t)>>> writeStack;
+    short writeStackSize;
 
-    ByteArray extentAutoRead(const LBA_t& addr);
+    inline ByteArray extentAutoRead(const LBA_t& addr);
+    inline list<pair<LBA_t, LBA_t>> extentHeadAutoRead(LBA_t addr); //return the extents in the specific extent group, first:startpos, second:length, whether smallData or largeData
     FSNode* getInode(const inum_t& inum);
     ByteArray getData(const LBA_t& addr);
+    void saveInode(const FSNode& node); //only save the base, if node is a directory, dentrys need to be manually saved
     LBA_t largeDataWrite(const ByteArray& data);
-    LBA_t smallDataWrite(const ByteArray& data);
+    LBA_t smallDataWrite(const ByteArray& data, const std::function<void(LBA_t)>& callback);
     ByteArray smallDataRead(const LBA_t& addr);
     ByteArray largeDataRead(LBA_t addr);
+    pair<LBA_t, LBA_t> largeDataReadHead(const LBA_t& addr); //return the head info of a specific extent, first: length, second: prev
     void extentTreeSave();
+    void freeWriteStack(); //free the writeStack, really write data to disk
+    void removeNodes(const inum_t& node); //remove subnode recursively without modifying the parent node
 };
+ByteArray FS::extentAutoRead(const LBA_t& addr)
+{
+    if (addr >> ACTUAL_LBA_BITS)
+        return smallDataRead(addr);
+    return largeDataRead(addr);
+}
 #endif
