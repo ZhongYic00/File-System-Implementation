@@ -42,6 +42,7 @@ void FS::fsInit()
 void FS::fsExit()
 {
     //write the rest small pieces to disk
+    freeWriteStack();
 
     //save inode-map
     LBA_t inodeMapLBA = largeDataWrite(inodeMap->dataExport());
