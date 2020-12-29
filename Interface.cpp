@@ -13,13 +13,13 @@
 #include <bits/stdc++.h>
 #include <fuse3/fuse.h>
 
-FS fs;
+static FS fs;
 
-inum_t parse(const char* path)
+static inum_t parse(const char* path)
 {
     inum_t inum = 0;
     int len = strlen(path);
-    inum_t father = root; //root means the father of the first dir;
+    inum_t father = fs.rootInum(); //root means the father of the first dir;
     string now = "";
     for (int i = 0; i < len; i++) {
         if (path[i] == '/') {
