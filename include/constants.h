@@ -14,6 +14,8 @@
 #define SUPERBLOCK_SIZE_BYTE (SUPERBLOCK_SIZE_BLK * 4 * KB)
 #define ACTUAL_LBA_BITS 48
 #define USABLE_PIECES_PER_BLOCK 254
+#define PIECE_SIZE 16
+#define BITMAP_BITS (BLOCKSIZE_BYTE / PIECE_SIZE)
 
 typedef unsigned char u8;
 typedef u8 Byte;
