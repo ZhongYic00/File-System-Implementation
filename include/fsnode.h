@@ -28,7 +28,7 @@ public:
     ByteArray nodeDataExport() const;
     inline inum_t inum() const;
     inline LBA_t dataExtentLBA() const;
-    inline bool invalid() const;
+    inline bool isValid() const;
     inline bool isDirectory() const;
     //ull directSubnodes() const;
     inline ull refCount() const;

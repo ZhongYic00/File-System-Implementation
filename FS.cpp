@@ -86,7 +86,7 @@ FSNode* FS::getInode(const inum_t& inum)
 {
     LBA_t inodeLBA = inodeMap->queryLBA(inum);
     FSNode nodeBase(smallDataRead(inodeLBA));
-    if (nodeBase.invalid())
+    if (nodeBase.isValid())
         return new FSNode(FSNode::NodeInvalid);
     if (!nodeBase.isDirectory())
         return new FileNode(nodeBase);
@@ -223,7 +223,7 @@ list<pair<LBA_t, LBA_t>> FS::extentHeadAutoRead(LBA_t addr)
 ByteArray FS::readFile(const inum_t& inum)
 {
     FSNode inode(extentAutoRead(inodeMap->queryLBA(inum)));
-    if (inode.invalid()) {
+    if (inode.isValid()) {
         throw "inode read error";
         return ByteArray();
     }
@@ -238,7 +238,7 @@ ByteArray FS::readFile(const inum_t& inum)
 void FS::writeFile(const inum_t& inum, const ByteArray& nwdata)
 {
     FSNode inode(extentAutoRead(inodeMap->queryLBA(inum)));
-    if (inode.invalid()) {
+    if (inode.isValid()) {
         throw "inode read error";
         return;
     }
@@ -256,7 +256,7 @@ void FS::removeNode(const inum_t& parent, const inum_t& node)
 {
     //what if there're subnodes under 'node' ?
     auto prnt = getInode(parent);
-    if (prnt->invalid()) {
+    if (prnt->isValid()) {
         throw "inode read error";
         return delete prnt;
     }
@@ -273,7 +273,7 @@ void FS::removeNodes(const inum_t& node)
 {
     //release subnodes
     auto nd = getInode(node);
-    if (nd->invalid()) {
+    if (nd->isValid()) {
         throw "inode read error";
         return delete nd;
     }
