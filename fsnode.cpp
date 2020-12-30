@@ -17,6 +17,11 @@ FSNode::FSNode(const inum_t& type)
     , _refs(0)
 {
 }
+FSNode::FSNode(const ByteArray& d)
+    : _inum(*reinterpret_cast<inum_t*>(d[18]))
+{
+    memcpy(&access, d.d_ptr(), sizeof(*this));
+}
 FSNode::~FSNode() {}
 inum_t FSNode::newNodeNum()
 {

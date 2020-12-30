@@ -32,7 +32,7 @@ public:
     inline bool isDirectory() const;
     //ull directSubnodes() const;
     inline ull refCount() const;
-    void updateDataExtentLBA(const LBA_t& addr);
+    inline void updateDataExtentLBA(const LBA_t& addr);
 
 protected:
     Access access;
@@ -63,4 +63,5 @@ bool FSNode::isDirectory() const { return access.isDirectory(); }
 LBA_t FSNode::dataExtentLBA() const { return _dataLBA; }
 ull FSNode::refCount() const { return _refs; }
 inum_t FSNode::inum() const { return _inum; }
+void FSNode::updateDataExtentLBA(const LBA_t& addr) { _dataLBA = addr; }
 #endif // FSNODE_H

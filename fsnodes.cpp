@@ -31,6 +31,28 @@ hash_t DirectoryNode::calcHash(const string& str)
 {
     return (hash_t)(0);
 }
+void DirectoryNode::removeSubnodeByInum(const inum_t& inodeNum)
+{
+    hash_t hsh = 0;
+    for (auto i : subnodeAttr) {
+        if (i.second.addr == inodeNum) {
+            hsh = i.first;
+            break;
+        }
+    }
+    if (hsh)
+        removeSubnode(hsh);
+}
+ByteArray DirectoryNode::dataExport()
+{
+    auto tmp = new NodeCoreAttr[subnodeAttr.size()];
+    int cnt = 0;
+    for (auto i : subnodeAttr)
+        tmp[cnt++] = i.second;
+    auto rt = ByteArray(subnodeAttr.size() * sizeof(NodeCoreAttr), reinterpret_cast<BytePtr>(tmp));
+    delete[] tmp;
+    return rt;
+}
 FileNode::FileNode()
     : FSNode()
 {

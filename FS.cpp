@@ -213,6 +213,7 @@ list<pair<LBA_t, LBA_t>> FS::extentHeadAutoRead(LBA_t addr)
             addr = 0;
         }
     } while (addr);
+    return rt;
 }
 ByteArray FS::readFile(const inum_t& inum)
 {
@@ -239,8 +240,8 @@ void FS::writeFile(const inum_t& inum, const ByteArray& nwdata)
         throw "not a file node";
     }
     //access judgement
-
-    extentTree->releaseExtent(extentHeadAutoRead(inode.dataExtentLBA()));
+    list<pair<LBA_t, LBA_t>> exts = extentHeadAutoRead(inode.dataExtentLBA());
+    extentTree->releaseExtent(exts);
     inode.updateDataExtentLBA(largeDataWrite(nwdata));
     saveInode(inode);
 }
