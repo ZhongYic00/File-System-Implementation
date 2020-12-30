@@ -44,6 +44,8 @@ private:
     static inum_t nodeCount;
     static stack<inum_t> freeInum;
 
+    static ByteArray freeInumExport();
+
 protected:
     LBA_t _dataLBA;
     size_t _totalSize;

@@ -42,3 +42,17 @@ ByteArray FSNode::nodeDataExport() const
     delete[] tmp;
     return rt;
 }
+ByteArray FSNode::freeInumExport()
+{
+    list<inum_t> l;
+    for (; !freeInum.empty(); freeInum.pop())
+        l.push_back(freeInum.top());
+    auto tmp = new inum_t[l.size()];
+    auto j = tmp;
+    for (auto i : l) {
+        *j = i;
+        j++;
+    }
+    auto rt = ByteArray(l.size() * sizeof(inum_t), reinterpret_cast<BytePtr>(tmp));
+    return rt;
+}

@@ -124,7 +124,7 @@ void ExtentTree::build(node* p, int l, int r, int ref, LBA_t blk, LBA_t target, 
     pushup(p);
 }
 ExtentTree::ExtentTree(const ByteArray& d)
-    : root(nullptr)
+    : root(new node)
     , setroot(false)
     , NumOfUpd(0)
 {

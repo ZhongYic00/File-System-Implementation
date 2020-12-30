@@ -2,7 +2,7 @@
 #define HARDWAREABSTRACTIONLAYER_H
 #include "constants.h"
 #include <bits/stdc++.h>
-const long long DEVICESIZE = 500 * MB;
+const long long DEVICESIZE = DEVICE_SIZE;
 class HardwareAbstractionLayer {
 public:
     enum ErrorInfo {
@@ -13,8 +13,10 @@ public:
     };
     HardwareAbstractionLayer()
     {
-        //		memset(blockDevice,0,sizeof(blockDevice));
+        std::ifstream i("disk_save.dim", std::ios::binary);
+        i.read(reinterpret_cast<char*>(blockDevice), DEVICESIZE);
     }
+    ~HardwareAbstractionLayer();
     int read(const LBA_t LBA, const LBA_t _length, const BytePtr _data) const; //read data at LBA of length _length(measured by block), write result to _data(size of _data must be more than _length)
     int write(const LBA_t LBA, const BytePtr _data, const LBA_t _length); //write data to LBA of size _length(measured by block), data is passed by _data
     inline size_t deviceSize() const;

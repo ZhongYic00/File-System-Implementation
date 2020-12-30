@@ -9,6 +9,8 @@ public:
     ByteArray(const ByteArray& x);
     ByteArray(ByteArray&& x);
     ByteArray(const std::list<ByteArray>& x);
+    template <typename T>
+    ByteArray(const std::list<T>& l);
     ~ByteArray();
     inline const BytePtr d_ptr();
     inline const BytePtr d_ptr() const;

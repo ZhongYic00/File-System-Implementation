@@ -5,10 +5,11 @@
 #endif
 int main(int argc, char* argv[])
 {
-    FS demo;
-    demo.fsInfo();
+    FS fs;
+    fs.fsInit();
+    fs.fsExit();
 #ifdef linux
-    return fuse_main(argc, argv, &fs_operations, NULL);
+    //return fuse_main(argc, argv, &fs_operations, NULL);
 #else
     return 0;
 #endif

@@ -32,3 +32,9 @@ int HardwareAbstractionLayer::write(const LBA_t LBA, const BytePtr _data, const 
     }
     return Unknown;
 }
+HardwareAbstractionLayer::~HardwareAbstractionLayer()
+{
+    std::ofstream o("disk_save.dim", std::ios::binary);
+    o.write(reinterpret_cast<char*>(blockDevice), DEVICESIZE);
+    o.close();
+}

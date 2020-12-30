@@ -1,4 +1,8 @@
 #include "include/FS.h"
+#ifndef RELEASE
+using std::cerr;
+using std::endl;
+#endif
 void FS::fsInfo() const
 {
     printf("FileSystem Size: %ullBytes\n", HAL.deviceSize());
@@ -6,13 +10,16 @@ void FS::fsInfo() const
 void FS::fsInit()
 {
     //load superblock
+    cerr << "call fsInit()" << endl;
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     HAL.read(SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
     memcpy(&superblock, superblockTmp, SUPERBLOCK_REAL_SIZE);
-    if (superblock.isValid()) {
+    if (!superblock.isValid()) {
         HAL.read(BAK_SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
-        if (superblock.isValid()) {
-            exit(1);
+        if (!superblock.isValid()) {
+            if (!superblock.empty())
+                exit(1);
+            return fsMake();
         }
         //recover main-superblock via backup superblock
         memset(superblockTmp, 0, SUPERBLOCK_SIZE_BYTE);
@@ -39,18 +46,35 @@ void FS::fsInit()
     //load inumCnt
     FSNode::nodeCount = superblock.inumCnt();
 }
+void FS::fsMake()
+{
+    cerr << "call fsMake" << endl;
+    superblock = Superblock();
+    extentTree = new ExtentTree(ByteArray(0, nullptr));
+    cerr << "extent-tree init over" << endl;
+    inodeMap = new InodeMap(ByteArray(0, nullptr));
+}
 void FS::fsExit()
 {
+    cerr << "call fsExit" << endl;
+    //save inum
+    superblock.updateInumCnt(FSNode::nodeCount);
+    superblock.updateFreeInumPoolLBA(largeDataWrite(FSNode::freeInumExport()));
+
+    cerr << "write the rest small pieces to disk" << endl;
     //write the rest small pieces to disk
     freeWriteStack();
 
+    cerr << "save inode-map" << endl;
     //save inode-map
-    LBA_t inodeMapLBA = largeDataWrite(inodeMap->dataExport());
-    superblock.updateInodeMapLBA(inodeMapLBA);
+    //LBA_t inodeMapLBA = largeDataWrite(inodeMap->dataExport());
+    //superblock.updateInodeMapLBA(inodeMapLBA);
 
+    cerr << "save extent-tree" << endl;
     //save extent-tree
     extentTreeSave();
 
+    cerr << "save superblock" << endl;
     //save superblock
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     memset(superblockTmp, 0, SUPERBLOCK_SIZE_BYTE);
@@ -126,6 +150,11 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
 {
     const size_t HEAD_RESERVED = sizeof(LBA_t) + sizeof(u8);
     auto estimateBlocks = [](size_t size) -> LBA_t {
+        auto rt = size / BLOCKSIZE_BYTE;
+        auto blks = std::bitset<64>(rt).count();
+        if (rt * BLOCKSIZE_BYTE < size + rt * 64 + blks * 8) //bugs may occur
+            rt++;
+        return rt;
         //bit_count(cell((size+blks*64+blks*8)/4096))=blks
     };
     auto newExtent = [](LBA_t prev, BytePtr st, u8 blks_k) -> BytePtr {

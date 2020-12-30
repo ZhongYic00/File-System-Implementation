@@ -13,6 +13,7 @@ public:
     void fsInfo() const;
     void fsInit();
     void fsExit();
+    void fsMake();
     inline inum_t rootInum() const;
     ByteArray readFile(const inum_t& inum); //can only read accessible file data
     void writeFile(const inum_t& inum, const ByteArray& nwdata); //can only modify accessible file data

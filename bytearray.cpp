@@ -32,6 +32,17 @@ ByteArray::ByteArray(const std::list<ByteArray>& x)
         l += i.length();
     }
 }
+template <typename T>
+ByteArray::ByteArray(const std::list<T>& l)
+    : _d(new Byte[l.size() * sizeof(T)] + sizeof(size_t))
+{
+    *reinterpret_cast<size_t*>(_d) = l.size() * sizeof(T);
+    auto d = _d + sizeof(size_t);
+    for (auto i : l) {
+        *reinterpret_cast<T*>(d) = i;
+        d++;
+    }
+}
 ByteArray::~ByteArray()
 {
     delete[] _d;
