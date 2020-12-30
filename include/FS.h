@@ -17,7 +17,7 @@ public:
     ByteArray readFile(const inum_t& inum); //can only read accessible file data
     void writeFile(const inum_t& inum, const ByteArray& nwdata); //can only modify accessible file data
     list<NodeCoreAttr> readDirectory(const inum_t& inum); //return the list of subnodes of specific dir-node
-    LBA_t querySubnodeLBA(const inum_t& parent, const string& name); //return the inum of specific subnode under parent-node
+    inum_t querySubnodeInum(const inum_t& parent, const string& name); //return the inum of specific subnode under parent-node
     void removeNode(const inum_t& parent, const inum_t& node); //remove the node whether it's a file-node or dir-node
     void createNode(const inum_t& parent, const string& name, const bool& isDirectory); //create a node under 'parent' whose type is specificed by isDirectory, parent must be a dir-node
 
