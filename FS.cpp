@@ -9,9 +9,9 @@ void FS::fsInit()
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     HAL.read(SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
     memcpy(&superblock, superblockTmp, SUPERBLOCK_REAL_SIZE);
-    if (superblock.invalid()) {
+    if (superblock.isValid()) {
         HAL.read(BAK_SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
-        if (superblock.invalid()) {
+        if (superblock.isValid()) {
             exit(1);
         }
         //recover main-superblock via backup superblock
@@ -42,6 +42,7 @@ void FS::fsInit()
 void FS::fsExit()
 {
     //write the rest small pieces to disk
+    freeWriteStack();
 
     //save inode-map
     LBA_t inodeMapLBA = largeDataWrite(inodeMap->dataExport());
@@ -104,7 +105,7 @@ void FS::saveInode(const FSNode& node)
         LBA_t ori = inodeMap->queryLBA(inum);
         if (ori != 0) {
             //delete the origin inode
-            extentTree->releaseExtent(ori);
+            extentTree->releaseExtent(ori, 1);
         }
         inodeMap->updateLBA(inum, addr); //problems may occur since inodemap may have been destructed when this function called
     });
@@ -326,7 +327,7 @@ void FS::freeWriteStack()
     auto buffer = new Byte[BLOCKSIZE_BYTE];
     memset(buffer, 0, BLOCKSIZE_BYTE);
     //bugs mau occur after crash
-    auto dest = extentTree->allocateExtent(writeStack.size()); //record the reference count on extent-tree
+    auto dest = *extentTree->allocateExtent(writeStack.size()).begin(); //record the reference count on extent-tree
     std::bitset<BITMAP_BITS> btmp;
     for (auto buf = buffer + (BITMAP_BITS / 8); !writeStack.empty();) {
         auto top = writeStack.top();
@@ -344,6 +345,6 @@ void FS::freeWriteStack()
         *reinterpret_cast<unsigned long*>(buffer) = btmp.to_ulong();
     }
     //write to disk
-    HAL.write(dest, buffer, 1);
+    HAL.write(dest.first, buffer, 1);
     delete[] buffer;
 }

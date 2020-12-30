@@ -1,7 +1,7 @@
 #include "include/fsnode.h"
 
 stack<inum_t> FSNode::freeInum;
-inum_t FSNode::nodeCount;
+inum_t FSNode::nodeCount = 1;
 
 FSNode::FSNode()
     : _inum(newNodeNum())
@@ -17,6 +17,7 @@ FSNode::FSNode(const inum_t& type)
     , _refs(0)
 {
 }
+FSNode::~FSNode() {}
 inum_t FSNode::newNodeNum()
 {
     if (freeInum.empty())

@@ -13,6 +13,7 @@ public:
     void fsInfo() const;
     void fsInit();
     void fsExit();
+    inline inum_t rootInum() const;
     ByteArray readFile(const inum_t& inum); //can only read accessible file data
     void writeFile(const inum_t& inum, const ByteArray& nwdata); //can only modify accessible file data
     list<NodeCoreAttr> readDirectory(const inum_t& inum); //return the list of subnodes of specific dir-node
@@ -48,4 +49,5 @@ ByteArray FS::extentAutoRead(const LBA_t& addr)
         return smallDataRead(addr);
     return largeDataRead(addr);
 }
+inum_t FS::rootInum() const { return superblock.root(); }
 #endif
