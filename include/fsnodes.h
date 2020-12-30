@@ -16,6 +16,8 @@ public:
     void removeSubnodeByInum(const inum_t& inodeNum); //remove subnode by inodeNumber
     void removeSubnode(const hash_t& nodeNameHash); //remove subnode by nodeName(hash)
     inline void removeSubnode(const string& nodeName); //remove subnode by nodeName
+    inline inum_t getSubnode(const string& nodeName);
+    inline list<NodeCoreAttr> readDir() const;
     //inline void resetRef();
     ByteArray dataExport();
 
@@ -39,4 +41,19 @@ private:
 void DirectoryNode::removeSubnode(const string& nodeName) { this->removeSubnode(calcHash(nodeName)); }
 //void DirectoryNode::resetRef() { _subnodes = 0; })
 void FileNode::reduceRef() { --_refs; }
+inum_t DirectoryNode::getSubnode(const string& nodeName)
+{
+    if (subnodeAttr.count(calcHash(nodeName)))
+        return subnodeAttr[calcHash(nodeName)].addr;
+    else
+        throw "node not found!";
+}
+list<NodeCoreAttr> DirectoryNode::readDir() const
+{
+    list<NodeCoreAttr> rt;
+    for (auto i : subnodeAttr) {
+        rt.push_back(i.second);
+    }
+    return rt;
+}
 #endif //FSNODES_H

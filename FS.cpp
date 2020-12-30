@@ -234,11 +234,9 @@ void FS::writeFile(const inum_t& inum, const ByteArray& nwdata)
     FSNode inode(extentAutoRead(inodeMap->queryLBA(inum)));
     if (inode.isValid()) {
         throw "inode read error";
-        return;
     }
     if (inode.isDirectory()) {
         throw "not a file node";
-        return;
     }
     //access judgement
 
@@ -251,12 +249,12 @@ void FS::removeNode(const inum_t& parent, const inum_t& node)
     //what if there're subnodes under 'node' ?
     auto prnt = getInode(parent);
     if (prnt->isValid()) {
+        delete prnt;
         throw "inode read error";
-        return delete prnt;
     }
     if (!prnt->isDirectory()) { //in case of illegal call
+        delete prnt;
         throw "not a directory node";
-        return delete prnt;
     }
     removeNodes(node);
     dynamic_cast<DirectoryNode*>(prnt)->removeSubnodeByInum(node);
@@ -268,8 +266,8 @@ void FS::removeNodes(const inum_t& node)
     //release subnodes
     auto nd = getInode(node);
     if (nd->isValid()) {
+        delete nd;
         throw "inode read error";
-        return delete nd;
     }
     //if nd is a dir, recursively remove all subnodes. elif nd is a file, just reduce the reference count.
     if (nd->isDirectory()) {
@@ -301,8 +299,8 @@ void FS::createNode(const inum_t& parent, const string& name, const bool& isDire
 {
     auto ori = getInode(parent);
     if (!ori->isDirectory()) {
+        delete ori;
         throw "not a directory node";
-        return delete ori;
     }
     FSNode* nwNode = nullptr;
     if (isDirectory)
@@ -347,4 +345,38 @@ void FS::freeWriteStack()
     //write to disk
     HAL.write(dest.first, buffer, 1);
     delete[] buffer;
+}
+inum_t FS::querySubnodeInum(const inum_t& parent, const string& name)
+{
+    auto prnt = getInode(parent);
+    if (!prnt->isValid()) {
+        delete prnt;
+        throw "node read error";
+    }
+    if (!prnt->isDirectory()) {
+        delete prnt;
+        throw "not a directory";
+    }
+    try {
+        auto rt = dynamic_cast<DirectoryNode*>(prnt)->getSubnode(name);
+        delete prnt;
+        return rt;
+    } catch (string s) {
+        throw std::move(s);
+    }
+}
+list<NodeCoreAttr> FS::readDirectory(const inum_t& inum)
+{
+    auto nd = getInode(inum);
+    if (!nd->isValid()) {
+        delete nd;
+        throw "node read error";
+    }
+    if (!nd->isDirectory()) {
+        delete nd;
+        throw "not a directory";
+    }
+    auto rt = dynamic_cast<DirectoryNode*>(nd)->readDir();
+    delete nd;
+    return rt;
 }
