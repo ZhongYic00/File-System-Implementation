@@ -21,6 +21,7 @@ public:
     inum_t querySubnodeInum(const inum_t& parent, const string& name); //return the inum of specific subnode under parent-node
     void removeNode(const inum_t& parent, const inum_t& node); //remove the node whether it's a file-node or dir-node
     void createNode(const inum_t& parent, const string& name, const bool& isDirectory); //create a node under 'parent' whose type is specificed by isDirectory, parent must be a dir-node
+    inline FSNode getInodeBase(const inum_t& inum);
 #ifndef RELEASE
     void test();
 #endif
@@ -55,4 +56,11 @@ ByteArray FS::extentAutoRead(const LBA_t& addr)
     return largeDataRead(addr);
 }
 inum_t FS::rootInum() const { return superblock.root(); }
+FSNode FS::getInodeBase(const inum_t& inum)
+{
+    auto tmp = getInode(inum);
+    auto rt = *tmp;
+    delete tmp;
+    return rt;
+}
 #endif
