@@ -9,6 +9,9 @@ public:
         , _inumCnt(1)
         , valid(true)
     {
+        _extentTreeBakLBA = DEVICE_SIZE_BLK - SUPERBLOCK_SIZE_BLK - EXTENT_LOG_SIZE_BLK;
+        _extentTreeRendLBA = _extentTreeLBA = _extentTreeBakLBA;
+        _inodeMapLBA = 0;
     }
     inline LBA_t root() const;
     inline LBA_t extentTreeLBA() const;

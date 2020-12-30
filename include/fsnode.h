@@ -45,6 +45,7 @@ private:
     static stack<inum_t> freeInum;
 
     static ByteArray freeInumExport();
+    static void loadFreeInumPool(const ByteArray& d);
 
 protected:
     LBA_t _dataLBA;

@@ -14,7 +14,7 @@ inline int HardwareAbstractionLayer::_addressJudge(const LBA_t& LBA, const LBA_t
 }
 int HardwareAbstractionLayer::read(const LBA_t LBA, const LBA_t _length, const BytePtr _data) const
 {
-    if (!_addressJudge(LBA, _length))
+    if (_addressJudge(LBA, _length))
         return _addressJudge(LBA, _length);
     else {
         memcpy(_data, (u8*)blockDevice + LBA * BLOCKSIZE_BYTE, _length * BLOCKSIZE_BYTE); // memcpy(dst,src,size)
@@ -24,7 +24,7 @@ int HardwareAbstractionLayer::read(const LBA_t LBA, const LBA_t _length, const B
 }
 int HardwareAbstractionLayer::write(const LBA_t LBA, const BytePtr _data, const LBA_t _length)
 {
-    if (!_addressJudge(LBA, _length))
+    if (_addressJudge(LBA, _length))
         return _addressJudge(LBA, _length);
     else {
         memcpy((u8*)blockDevice + LBA * BLOCKSIZE_BYTE, _data, _length * BLOCKSIZE_BYTE);

@@ -29,20 +29,17 @@ void FS::fsInit()
     delete[] superblockTmp;
 
     //load extent-tree
-    auto extentTreeBuildTmp = extentAutoRead(superblock.extentTreeLBA());
-    extentTree = new ExtentTree(extentTreeBuildTmp);
+    LBA_t blks = superblock.extentTreeLBA() - superblock.extentTreeRendLBA();
+    auto extentTreeBuildTmp = new Byte[blks * BLOCKSIZE_BYTE]; //bugs may occur on '+1'
+    HAL.read(superblock.extentTreeRendLBA() + 1, blks, extentTreeBuildTmp);
+    extentTree = new ExtentTree(ByteArray(superblock.extentTreeLBA() - superblock.extentTreeRendLBA(), extentTreeBuildTmp)); //bugs may occur here, need ext-tree to save number of records
 
     //load inode-map
     auto inodeMapBuildTmp = extentAutoRead(superblock.inodeMapLBA());
     inodeMap = new InodeMap(inodeMapBuildTmp);
 
     //load freeInumPool
-    auto inumPoolTmp = extentAutoRead(superblock.freeInumPoolLBA());
-    inum_t* inumPoolArrayEnd = reinterpret_cast<inum_t*>(inumPoolTmp.end() - 4);
-    for (inum_t* i = reinterpret_cast<inum_t*>(inumPoolTmp.begin()); i < inumPoolArrayEnd; i++) {
-        //如何向private类变量加入数据？暂时用友元类解决
-        FSNode::freeInum.push(*i);
-    }
+    FSNode::loadFreeInumPool(extentAutoRead(superblock.freeInumPoolLBA()));
     //load inumCnt
     FSNode::nodeCount = superblock.inumCnt();
 }
@@ -87,7 +84,7 @@ void FS::extentTreeSave()
 
     /*extentTree layout on disk is as this:
      *  | superblock | extent log area | extentTreeBak(version N-1) | extentTree(version N) |
-     *                                 ^                            ^                       ^
+     *                                 ^-                           ^-                      ^-
      *                           extentTreeBakLBA           extentTreeLBA           extentTreeRendLBA
      */
     //move extent-tree(n)
@@ -95,17 +92,23 @@ void FS::extentTreeSave()
     LBA_t extentTreeBakRbegin = superblock.extentTreeBakLBA();
     const LBA_t extentTreeRend = superblock.extentTreeRendLBA();
     BytePtr blkTmp = new Byte[BLOCKSIZE_BYTE];
-    for (; extentTreeRbegin >= extentTreeRend; extentTreeRbegin--, extentTreeBakRbegin--) {
+    for (; extentTreeRbegin > extentTreeRend; extentTreeRbegin--, extentTreeBakRbegin--) {
         HAL.read(extentTreeRbegin, 1, blkTmp);
         HAL.write(extentTreeBakRbegin, blkTmp, 1);
     }
     delete[] blkTmp;
-    superblock.updateExtentTreeLBA(++extentTreeBakRbegin);
+    superblock.updateExtentTreeLBA(extentTreeBakRbegin);
 
     //save extent-tree(n+1)
-    ByteArray extentTreeTmp = extentTree->dataExport();
-    HAL.write(superblock.extentTreeLBA(), extentTreeTmp.begin(), extentTreeTmp.length());
-    superblock.updateExtentTreeRendLBA(extentTreeBakRbegin - extentTreeTmp.length());
+    auto extentTreeTmp = extentTree->dataExport();
+    LBA_t blks = extentTreeTmp.length() / BLOCKSIZE_BYTE + (extentTreeTmp.length() % BLOCKSIZE_BYTE) ? 1 : 0;
+    auto extentTreeTtmp = new Byte[blks * BLOCKSIZE_BYTE];
+    memcpy(extentTreeTtmp, extentTreeTmp.d_ptr(), extentTreeTmp.length());
+
+    //HAL.write(superblock.extentTreeLBA(), extentTreeTmp.begin(), extentTreeTmp.length());
+    superblock.updateExtentTreeRendLBA(extentTreeBakRbegin - blks);
+    HAL.write(superblock.extentTreeRendLBA() + 1, extentTreeTtmp, blks);
+    delete[] extentTreeTtmp;
 }
 FSNode* FS::getInode(const inum_t& inum)
 {
@@ -164,7 +167,7 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
         *reinterpret_cast<u8*>(rt + sizeof(LBA_t)) = blks_k;
         return rt;
     };
-    auto extents = extentTree->allocateExtents(estimateBlocks(data.length() >> 12)); //convert bytes to blocks, extentTree only cares about block
+    auto extents = extentTree->allocateExtents(estimateBlocks(data.length())); //convert bytes to blocks, extentTree only cares about block
     //bug here, assume that there's a very small piece, smaller than a block, invalid visit may happen when copying data into write buffer
     LBA_t prev = 0;
     size_t pos = 0;
@@ -355,8 +358,10 @@ void FS::freeWriteStack()
     auto buffer = new Byte[BLOCKSIZE_BYTE];
     memset(buffer, 0, BLOCKSIZE_BYTE);
     //bugs mau occur after crash
-    auto dest = *extentTree->allocateExtent(writeStack.size()).begin(); //record the reference count on extent-tree
+    //auto dest = *extentTree->allocateExtent(writeStack.size()).begin(); //record the reference count on extent-tree
+    pair<LBA_t, LBA_t> dest = { 1, 0 };
     std::bitset<BITMAP_BITS> btmp;
+    btmp[0] = 1;
     for (auto buf = buffer + (BITMAP_BITS / 8); !writeStack.empty();) {
         auto top = writeStack.top();
         writeStack.pop();
@@ -369,8 +374,8 @@ void FS::freeWriteStack()
         buf += pieces(top.first.length());
     }
     //write bitmap
-    for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, buffer += sizeof(unsigned long), btmp >>= sizeof(unsigned long) * 8) {
-        *reinterpret_cast<unsigned long*>(buffer) = btmp.to_ulong();
+    for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, btmp >>= sizeof(unsigned long) * 8) {
+        *reinterpret_cast<unsigned long*>(buffer + i) = btmp.to_ulong();
     }
     //write to disk
     HAL.write(dest.first, buffer, 1);
@@ -409,4 +414,8 @@ list<NodeCoreAttr> FS::readDirectory(const inum_t& inum)
     auto rt = dynamic_cast<DirectoryNode*>(nd)->readDir();
     delete nd;
     return rt;
+}
+void FS::test()
+{
+    //smallDataWrite();
 }

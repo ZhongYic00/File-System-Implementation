@@ -17,6 +17,7 @@
 #define PIECE_SIZE 16
 #define BITMAP_BITS (BLOCKSIZE_BYTE / PIECE_SIZE)
 #define ROOT_INUM 0
+#define EXTENT_LOG_SIZE_BLK 0
 
 typedef unsigned char u8;
 typedef u8 Byte;

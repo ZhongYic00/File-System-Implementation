@@ -8,6 +8,7 @@ int main(int argc, char* argv[])
     FS fs;
     fs.fsInit();
     fs.fsExit();
+    fs.test();
 #ifdef linux
     //return fuse_main(argc, argv, &fs_operations, NULL);
 #else

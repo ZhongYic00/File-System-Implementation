@@ -21,7 +21,9 @@ public:
     inum_t querySubnodeInum(const inum_t& parent, const string& name); //return the inum of specific subnode under parent-node
     void removeNode(const inum_t& parent, const inum_t& node); //remove the node whether it's a file-node or dir-node
     void createNode(const inum_t& parent, const string& name, const bool& isDirectory); //create a node under 'parent' whose type is specificed by isDirectory, parent must be a dir-node
-
+#ifndef RELEASE
+    void test();
+#endif
 private:
     HardwareAbstractionLayer HAL;
     Superblock superblock;
@@ -46,6 +48,8 @@ private:
 };
 ByteArray FS::extentAutoRead(const LBA_t& addr)
 {
+    if (!addr)
+        return ByteArray();
     if (addr >> ACTUAL_LBA_BITS)
         return smallDataRead(addr);
     return largeDataRead(addr);
