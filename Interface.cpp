@@ -15,18 +15,28 @@
 
 static FS fs;
 
-static inum_t parse(const char* path)
+static inum_t parse(const char* path, string& name)
 {
     inum_t inum = 0;
     int len = strlen(path);
-    inum_t father = fs.rootInum(); //root means the father of the first dir;
+    inum_t father = fs.rootInum();
     string now = "";
     for (int i = 0; i < len; i++) {
-        if (path[i] == '/') {
+        if (path[i] == '/' || i == len - 1) {
             if (now != "") {
-                inum = fs.querySubnodeLBA(father, now);
-                now = "";
+                try {
+                    inum = fs.querySubnodeInum(father, now);
+                } catch (string s) {
+                    if (i != len - 1)
+                        return static_cast<ull>(-1);
+                    else {
+                        name = now;
+                        inum = father;
+                        break;
+                    }
+                }
                 father = inum;
+                now = "";
             }
             continue;
         }
@@ -72,7 +82,8 @@ static int fs_read(const char* path, char* buf, size_t size, off_t offset, struc
     //access judgement, using fi
     if (offset < 0)
         return -1;
-    auto tmp = fs.readFile(parse(path));
+    string s = "";
+    auto tmp = fs.readFile(parse(path, s));
     memcpy(buf, tmp[offset], size);
     return size;
 }
@@ -81,7 +92,8 @@ static int fs_write(const char* path, const char* buf, size_t size, off_t offset
     //access judgement, using fi
     if (offset < 0)
         return -1;
-    auto file = parse(path);
+    string s = "";
+    auto file = parse(path, s);
     auto tmp = fs.readFile(file);
     memcpy(tmp[offset], buf, size);
     fs.writeFile(file, tmp);
@@ -97,14 +109,38 @@ static int fs_chmod(const char* path, mode_t mod, struct fuse_file_info* fi)
 }
 static int fs_mknod(const char* path, mode_t mod, dev_t dev)
 {
+    string name = "";
+    auto file = parse(path, name);
+    if (name == "") {
+        throw "No file name decected.";
+        return -1;
+    }
+    try {
+        fs.createNode(file, name, 0);
+    } catch (string s) {
+        return -1;
+    }
     return 0;
 }
 static int fs_mkdir(const char* path, mode_t mod)
 {
+    string name = "";
+    auto file = parse(path, name);
+    if (name == "") {
+        throw "No directory name detected.";
+        return -1;
+    }
+    try {
+        fs.createNode(file, name, 1);
+    } catch (string s) {
+        return -1;
+    }
     return 0;
 }
 static int fs_rmnod(const char* path)
 {
+    string s = "";
+    auto file = parse(path, s);
     return 0;
 }
 static int fs_rmdir(const char* path)
