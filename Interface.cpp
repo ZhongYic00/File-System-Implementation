@@ -72,7 +72,22 @@ static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_inf
 }
 static int fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, enum fuse_readdir_flags flags)
 {
-    filler(buf, "hellofs", NULL, 0, fuse_fill_dir_flags(0));
+    string s = "";
+    inum_t fa = 0;
+    struct stat st;
+    auto file = parse(path, fa, s);
+    list<NodeCoreAttr> ls;
+    try {
+        ls = fs.readDirectory(file);
+    } catch (string s) {
+        return -1;
+    }
+    for (const auto& i : ls) {
+        memset(&st, 0, sizeof(st));
+        st.st_mode = (fs.getInodeBase(i.addr).isDirectory() ? S_IFDIR : S_IFMT);
+        if (filler(buf, i.name.c_str(), &st, 0, fuse_fill_dir_flags(0)))
+            break;
+    }
     return 0;
 }
 static int fs_open(const char* path, struct fuse_file_info* fi)
