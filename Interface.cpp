@@ -69,11 +69,22 @@ static int fs_open(const char* path, struct fuse_file_info* fi)
 }
 static int fs_read(const char* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi)
 {
-    memset(buf, 0, size);
+    //access judgement, using fi
+    if (offset < 0)
+        return -1;
+    auto tmp = fs.readFile(parse(path));
+    memcpy(buf, tmp[offset], size);
     return size;
 }
 static int fs_write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* fi)
 {
+    //access judgement, using fi
+    if (offset < 0)
+        return -1;
+    auto file = parse(path);
+    auto tmp = fs.readFile(file);
+    memcpy(tmp[offset], buf, size);
+    fs.writeFile(file, tmp);
     return 0;
 }
 static int fs_access(const char* path, int)

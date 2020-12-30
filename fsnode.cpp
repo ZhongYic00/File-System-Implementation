@@ -17,6 +17,7 @@ FSNode::FSNode(const inum_t& type)
     , _refs(0)
 {
 }
+FSNode::~FSNode() {}
 inum_t FSNode::newNodeNum()
 {
     if (freeInum.empty())

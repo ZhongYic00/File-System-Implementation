@@ -38,5 +38,5 @@ private:
 
 void DirectoryNode::removeSubnode(const string& nodeName) { this->removeSubnode(calcHash(nodeName)); }
 //void DirectoryNode::resetRef() { _subnodes = 0; })
-void FileNode::reduceRef() { --_subnodes; }
+void FileNode::reduceRef() { --_refs; }
 #endif //FSNODES_H
