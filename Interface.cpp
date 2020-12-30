@@ -15,13 +15,15 @@
 
 static FS fs;
 
-static inum_t parse(const char* path, string& name)
+static inum_t parse(const char* path, inum_t& father, string& name)
 {
     inum_t inum = 0;
     int len = strlen(path);
-    inum_t father = fs.rootInum();
+    father = fs.rootInum();
     string now = "";
     for (int i = 0; i < len; i++) {
+        if (now == "")
+            inum = father;
         if (path[i] == '/' || i == len - 1) {
             if (now != "") {
                 try {
@@ -35,7 +37,6 @@ static inum_t parse(const char* path, string& name)
                         break;
                     }
                 }
-                father = inum;
                 now = "";
             }
             continue;
@@ -47,11 +48,12 @@ static inum_t parse(const char* path, string& name)
 
 static void* fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 {
-
+    fs.fsInit();
     return nullptr;
 }
 static void fs_destroy(void* private_data)
 {
+    fs.fsExit();
 }
 static int fs_statfs(const char* path, struct statvfs* stbuf)
 {
@@ -83,7 +85,8 @@ static int fs_read(const char* path, char* buf, size_t size, off_t offset, struc
     if (offset < 0)
         return -1;
     string s = "";
-    auto tmp = fs.readFile(parse(path, s));
+    inum_t fa = 0;
+    auto tmp = fs.readFile(parse(path, fa, s));
     memcpy(buf, tmp[offset], size);
     return size;
 }
@@ -93,7 +96,8 @@ static int fs_write(const char* path, const char* buf, size_t size, off_t offset
     if (offset < 0)
         return -1;
     string s = "";
-    auto file = parse(path, s);
+    inum_t fa = 0;
+    auto file = parse(path, fa, s);
     auto tmp = fs.readFile(file);
     memcpy(tmp[offset], buf, size);
     fs.writeFile(file, tmp);
@@ -110,7 +114,8 @@ static int fs_chmod(const char* path, mode_t mod, struct fuse_file_info* fi)
 static int fs_mknod(const char* path, mode_t mod, dev_t dev)
 {
     string name = "";
-    auto file = parse(path, name);
+    inum_t fa = 0;
+    auto file = parse(path, fa, name);
     if (name == "") {
         throw "No file name decected.";
         return -1;
@@ -125,7 +130,8 @@ static int fs_mknod(const char* path, mode_t mod, dev_t dev)
 static int fs_mkdir(const char* path, mode_t mod)
 {
     string name = "";
-    auto file = parse(path, name);
+    inum_t fa = 0;
+    auto file = parse(path, fa, name);
     if (name == "") {
         throw "No directory name detected.";
         return -1;
@@ -140,11 +146,25 @@ static int fs_mkdir(const char* path, mode_t mod)
 static int fs_rmnod(const char* path)
 {
     string s = "";
-    auto file = parse(path, s);
+    inum_t father = 0;
+    auto file = parse(path, father, s);
+    try {
+        fs.removeNode(father, file);
+    } catch (string s) {
+        return -1;
+    }
     return 0;
 }
 static int fs_rmdir(const char* path)
 {
+    string s = "";
+    inum_t father = 0;
+    auto file = parse(path, father, s);
+    try {
+        fs.removeNode(father, file);
+    } catch (string s) {
+        return -1;
+    }
     return 0;
 }
 static struct fuse_operations fs_operations = {
