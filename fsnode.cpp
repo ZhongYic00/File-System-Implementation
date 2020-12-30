@@ -59,6 +59,8 @@ ByteArray FSNode::freeInumExport()
 }
 void FSNode::loadFreeInumPool(const ByteArray& d)
 {
+    if (!d.length())
+        return;
     auto n = *reinterpret_cast<size_t*>(d[0]);
     for (int i = 0; i < n; i++) {
         freeInum.push(*reinterpret_cast<inum_t*>(d[i * sizeof(inum_t) + sizeof(size_t)]));

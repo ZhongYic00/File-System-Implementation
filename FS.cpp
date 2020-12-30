@@ -64,8 +64,8 @@ void FS::fsExit()
 
     cerr << "save inode-map" << endl;
     //save inode-map
-    //LBA_t inodeMapLBA = largeDataWrite(inodeMap->dataExport());
-    //superblock.updateInodeMapLBA(inodeMapLBA);
+    LBA_t inodeMapLBA = largeDataWrite(inodeMap->dataExport());
+    superblock.updateInodeMapLBA(inodeMapLBA);
 
     cerr << "save extent-tree" << endl;
     //save extent-tree
@@ -167,7 +167,8 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
         *reinterpret_cast<u8*>(rt + sizeof(LBA_t)) = blks_k;
         return rt;
     };
-    auto extents = extentTree->allocateExtents(estimateBlocks(data.length())); //convert bytes to blocks, extentTree only cares about block
+    //auto extents = extentTree->allocateExtents(estimateBlocks(data.length())); //convert bytes to blocks, extentTree only cares about block
+    list<pair<LBA_t, u8>> extents = { { 10, 0 } };
     //bug here, assume that there's a very small piece, smaller than a block, invalid visit may happen when copying data into write buffer
     LBA_t prev = 0;
     size_t pos = 0;
