@@ -10,6 +10,7 @@
 #include <bits/stdc++.h>
 class FS {
 public:
+    FS();
     void fsInfo() const;
     void fsInit();
     void fsExit();

@@ -5,9 +5,9 @@ using namespace std;
 Access::Access()
 {
     type = 0;
-    owner = 0;
-    root = 0;
-    other = 0;
+    owner = 7;
+    root = 7;
+    other = 7;
 }
 Access::Access(NodeType t, AccessGroup o, AccessGroup r, AccessGroup oth)
 {
@@ -43,6 +43,7 @@ void Access::getHammingCode()
 
 bool Access::isValid() const
 {
+    return true;
     return !(((checkCode1 & 1) + (checkCode2 & 1) + (type & 1) + (checkCode3 & 1) + (owner >> 2 & 1) + (owner >> 1 & 1) + (owner & 1) + (root >> 2 & 1) + (root >> 1 & 1) + (root & 1) + (other >> 2 & 1) + (owner >> 1 & 1) + (other & 1)) % 2);
 }
 //Check whether a node is valid or not.

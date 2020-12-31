@@ -16,7 +16,8 @@ LBA_t InodeMap::queryLBA(const inum_t& i)
 {
     if (inodes.count(i))
         return inodes[i];
-    throw "inode not found";
+    return 0;
+    //throw "inode not found";
 }
 void InodeMap::remove(const inum_t& i)
 {

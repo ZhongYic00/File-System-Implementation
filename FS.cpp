@@ -3,6 +3,10 @@
 using std::cerr;
 using std::endl;
 #endif
+FS::FS()
+    : writeStackSize(0)
+{
+}
 void FS::fsInfo() const
 {
     printf("FileSystem Size: %ullBytes\n", HAL.deviceSize());
@@ -13,7 +17,9 @@ void FS::fsInit()
     cerr << "call fsInit()" << endl;
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     HAL.read(SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
+    cerr << 1 << endl;
     memcpy(&superblock, superblockTmp, SUPERBLOCK_REAL_SIZE);
+    cerr << 2 << endl;
     if (!superblock.isValid()) {
         HAL.read(BAK_SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
         if (!superblock.isValid()) {
@@ -26,19 +32,23 @@ void FS::fsInit()
         memcpy(superblockTmp, &superblock, SUPERBLOCK_REAL_SIZE);
         HAL.write(SUPERBLOCK_LBA, superblockTmp, SUPERBLOCK_SIZE_BLK);
     }
+    cerr << 3 << endl;
     delete[] superblockTmp;
 
     //load extent-tree
+    cerr << "load extent-tree" << endl;
     LBA_t blks = superblock.extentTreeLBA() - superblock.extentTreeRendLBA();
     auto extentTreeBuildTmp = new Byte[blks * BLOCKSIZE_BYTE]; //bugs may occur on '+1'
     HAL.read(superblock.extentTreeRendLBA() + 1, blks, extentTreeBuildTmp);
     extentTree = new ExtentTree(ByteArray(superblock.extentTreeLBA() - superblock.extentTreeRendLBA(), extentTreeBuildTmp)); //bugs may occur here, need ext-tree to save number of records
 
     //load inode-map
+    cerr << "load inode-map" << endl;
     auto inodeMapBuildTmp = extentAutoRead(superblock.inodeMapLBA());
     inodeMap = new InodeMap(inodeMapBuildTmp);
 
     //load freeInumPool
+    cerr << "load freeInumPool" << endl;
     FSNode::loadFreeInumPool(extentAutoRead(superblock.freeInumPoolLBA()));
     //load inumCnt
     FSNode::nodeCount = superblock.inumCnt();
@@ -50,6 +60,9 @@ void FS::fsMake()
     extentTree = new ExtentTree(ByteArray(0, nullptr));
     cerr << "extent-tree init over" << endl;
     inodeMap = new InodeMap(ByteArray(0, nullptr));
+    auto roottmp = new DirectoryNode(FSNode(), ByteArray());
+    dynamic_cast<DirectoryNode*>(roottmp)->updateDataExtentLBA(0);
+    saveInode(*roottmp);
 }
 void FS::fsExit()
 {
@@ -114,7 +127,7 @@ FSNode* FS::getInode(const inum_t& inum)
 {
     LBA_t inodeLBA = inodeMap->queryLBA(inum);
     FSNode nodeBase(smallDataRead(inodeLBA));
-    if (nodeBase.isValid())
+    if (!nodeBase.isValid())
         return new FSNode(FSNode::NodeInvalid);
     if (!nodeBase.isDirectory())
         return new FileNode(nodeBase);
@@ -128,7 +141,8 @@ ByteArray FS::getData(const LBA_t& addr)
 void FS::saveInode(const FSNode& node)
 {
     inum_t inum = node.inum();
-    smallDataWrite(node.nodeDataExport(), [&](LBA_t addr) -> void {
+    smallDataWrite(node.nodeDataExport(), [=](LBA_t addr) mutable -> void {
+        cerr << "inode " << inum << " finally saved at " << addr << "(" << bitset<64>(addr).to_string() << ")" << endl;
         LBA_t ori = inodeMap->queryLBA(inum);
         if (ori != 0) {
             //delete the origin inode
@@ -148,6 +162,7 @@ LBA_t FS::smallDataWrite(const ByteArray& data, const std::function<void(LBA_t)>
         freeWriteStack();
     writeStack.push({ data, callback });
     writeStackSize += pcs;
+    freeWriteStack();
 }
 LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
 {
@@ -167,8 +182,8 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
         *reinterpret_cast<u8*>(rt + sizeof(LBA_t)) = blks_k;
         return rt;
     };
-    //auto extents = extentTree->allocateExtents(estimateBlocks(data.length())); //convert bytes to blocks, extentTree only cares about block
-    list<pair<LBA_t, u8>> extents = { { 10, 0 } };
+    auto extents = extentTree->allocateExtents(estimateBlocks(data.length())); //convert bytes to blocks, extentTree only cares about block
+    //list<pair<LBA_t, u8>> extents = { { 10, 0 } };
     //bug here, assume that there's a very small piece, smaller than a block, invalid visit may happen when copying data into write buffer
     LBA_t prev = 0;
     size_t pos = 0;
@@ -189,18 +204,28 @@ ByteArray FS::smallDataRead(const LBA_t& addr)
     };
     HAL.read(standerizeLBA(addr), 1, tmp);
     bitset<BITMAP_BITS> bitmap;
-    for (int i = 0; i < BITMAP_BITS / (sizeof(unsigned long) * 8); i++, bitmap <<= sizeof(unsigned long) * 8) {
-        bitmap |= reinterpret_cast<unsigned long*>(tmp)[i];
+    for (int i = 0; i < BITMAP_BITS / (sizeof(unsigned long) * 8); i++) {
+        //bitmap <<= sizeof(unsigned long) * 8;
+        auto ttmp = bitset<BITMAP_BITS>(reinterpret_cast<unsigned long*>(tmp)[i]);
+        cerr << ttmp << ' ';
+        ttmp <<= (sizeof(unsigned long) * 8 * i);
+        bitmap |= ttmp;
+        cerr << bitset<32>(reinterpret_cast<unsigned long*>(tmp)[i]) << ' ' << ttmp << endl;
     }
+    cerr << "raw end" << endl;
+    cerr << "bitmap:" << bitmap << endl;
     auto findPieces = [](int index, bitset<BITMAP_BITS> bitmap) -> LBA_t {
+        if (index < 0)
+            return -1;
         while (index--) {
             bitmap[bitmap._Find_first()] = 0;
         }
         return bitmap._Find_first();
     }; //return the exact end pos of piece index in an block e.g. findPieces(0)=1, which means the 1st piece occupies (16B) piece 0 and 1
-    LBA_t startPos = findPieces((addr >> ACTUAL_LBA_BITS) - 1, bitmap) + 1; // >>ACTUAL_LBA_BITS cuts high 8 bits to locate pieces in the block
-    LBA_t len = findPieces(addr >> ACTUAL_LBA_BITS, bitmap) - startPos + 1;
-    auto rt = ByteArray(static_cast<size_t>(len * BLOCKSIZE_BYTE), tmp + (startPos * BLOCKSIZE_BYTE));
+    LBA_t startPos = findPieces((addr >> ACTUAL_LBA_BITS), bitmap); // >>ACTUAL_LBA_BITS cuts high 8 bits to locate pieces in the block
+    LBA_t len = findPieces((addr >> ACTUAL_LBA_BITS) + 1, bitmap) - startPos;
+    auto rt = ByteArray(static_cast<size_t>(len * PIECE_SIZE), tmp + (startPos * PIECE_SIZE));
+    rt.print();
     delete[] tmp;
     return rt;
 }
@@ -359,25 +384,33 @@ void FS::freeWriteStack()
     auto buffer = new Byte[BLOCKSIZE_BYTE];
     memset(buffer, 0, BLOCKSIZE_BYTE);
     //bugs mau occur after crash
-    //auto dest = *extentTree->allocateExtent(writeStack.size()).begin(); //record the reference count on extent-tree
-    pair<LBA_t, LBA_t> dest = { 1, 0 };
+    auto dest = *extentTree->allocateExtent(writeStack.size()).begin(); //record the reference count on extent-tree
+    //pair<LBA_t, LBA_t> dest = { 1, 0 };
     std::bitset<BITMAP_BITS> btmp;
     btmp[0] = 1;
-    for (auto buf = buffer + (BITMAP_BITS / 8); !writeStack.empty();) {
+    u8 kth = 1;
+    for (auto buf = buffer + (BITMAP_BITS / 8); !writeStack.empty(); kth++) {
         auto top = writeStack.top();
         writeStack.pop();
         //write data
+        top.first.print();
         memcpy(buf, top.first.d_ptr(), top.first.length());
-        top.second(dest.first);
+        top.second(dest.first | (1ULL * kth << ACTUAL_LBA_BITS));
         //record bitmap
         btmp[(buf - buffer) / PIECE_SIZE] = 1; //buf-buffer=delta bytes
         //next
         buf += pieces(top.first.length());
     }
+    cerr << ((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize << endl;
+    btmp[((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize] = 1;
+    writeStackSize = 0;
     //write bitmap
+    cerr << "save bitmap:" << btmp << endl;
     for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, btmp >>= sizeof(unsigned long) * 8) {
         *reinterpret_cast<unsigned long*>(buffer + i) = btmp.to_ulong();
+        cerr << bitset<32>(btmp.to_ulong()) << ' ';
     }
+    cerr << "raw end" << endl;
     //write to disk
     HAL.write(dest.first, buffer, 1);
     delete[] buffer;
@@ -403,6 +436,7 @@ inum_t FS::querySubnodeInum(const inum_t& parent, const string& name)
 }
 list<NodeCoreAttr> FS::readDirectory(const inum_t& inum)
 {
+    cerr << "call FS::readDirectory " << inum << endl;
     auto nd = getInode(inum);
     if (!nd->isValid()) {
         delete nd;
@@ -418,5 +452,5 @@ list<NodeCoreAttr> FS::readDirectory(const inum_t& inum)
 }
 void FS::test()
 {
-    //smallDataWrite();
+    readDirectory(rootInum());
 }

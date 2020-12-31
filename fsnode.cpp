@@ -1,7 +1,7 @@
 #include "include/fsnode.h"
 
 stack<inum_t> FSNode::freeInum;
-inum_t FSNode::nodeCount = 1;
+inum_t FSNode::nodeCount = 0;
 
 FSNode::FSNode()
     : _inum(newNodeNum())
@@ -9,6 +9,7 @@ FSNode::FSNode()
     , _totalSize(0)
     , _refs(1)
 {
+    print();
 }
 FSNode::FSNode(const inum_t& type)
     : _inum(type)
@@ -21,8 +22,12 @@ FSNode::FSNode(const ByteArray& d)
     : _inum(*reinterpret_cast<inum_t*>(d[18]))
 {
     memcpy(&access, d.d_ptr(), sizeof(*this));
+    print();
 }
-FSNode::~FSNode() {}
+FSNode::~FSNode()
+{
+    //freeNodeNum(_inum);
+}
 inum_t FSNode::newNodeNum()
 {
     if (freeInum.empty())
@@ -37,7 +42,7 @@ void FSNode::freeNodeNum(const inum_t& inum)
 ByteArray FSNode::nodeDataExport() const
 {
     BytePtr tmp = new Byte[sizeof(*this)];
-    memcpy(tmp, this, sizeof(*this));
+    memcpy(tmp, &access, sizeof(*this));
     ByteArray rt(sizeof(*this), tmp);
     delete[] tmp;
     return rt;

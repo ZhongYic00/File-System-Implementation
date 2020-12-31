@@ -16,6 +16,7 @@ public:
     bool isValid() const;
     int chmod(string s);
     inline bool isDirectory() const;
+    inline void setDirectory();
 
 private:
     CheckCode checkCode1 : 1;
@@ -30,4 +31,5 @@ private:
 
 bool Access::isDirectory() const { return type; }
 //To judge whether this node is a directory.
+void Access::setDirectory() { type = 1; }
 #endif // ACCESS_H

@@ -3,6 +3,14 @@ DirectoryNode::DirectoryNode() {}
 DirectoryNode::DirectoryNode(const FSNode& node, const ByteArray& ext)
     : FSNode(node)
 {
+    access.setDirectory();
+    if (!ext.length())
+        return;
+    size_t sz = *reinterpret_cast<size_t*>(ext[0]);
+    for (int i = 0; i < sz; i++) {
+        auto attr = reinterpret_cast<NodeCoreAttr*>(ext[sizeof(size_t)])[i];
+        subnodeAttr[calcHash(attr.name)] = attr;
+    }
     //recover subnodeAttr from ext
 }
 void DirectoryNode::addSubnode(const inum_t& addr, const string& nodeName)
@@ -29,7 +37,8 @@ void DirectoryNode::removeSubnode(const hash_t& nodeNameHash)
 }
 hash_t DirectoryNode::calcHash(const string& str)
 {
-    return (hash_t)(0);
+    std::hash<string> hs;
+    return (hash_t)(hs(str));
 }
 void DirectoryNode::removeSubnodeByInum(const inum_t& inodeNum)
 {
@@ -45,11 +54,12 @@ void DirectoryNode::removeSubnodeByInum(const inum_t& inodeNum)
 }
 ByteArray DirectoryNode::dataExport()
 {
-    auto tmp = new NodeCoreAttr[subnodeAttr.size()];
+    auto tmp = new Byte[subnodeAttr.size() * sizeof(NodeCoreAttr) + sizeof(size_t)];
     int cnt = 0;
+    *reinterpret_cast<size_t*>(tmp) = subnodeAttr.size();
     for (auto i : subnodeAttr)
-        tmp[cnt++] = i.second;
-    auto rt = ByteArray(subnodeAttr.size() * sizeof(NodeCoreAttr), reinterpret_cast<BytePtr>(tmp));
+        reinterpret_cast<NodeCoreAttr*>(tmp + sizeof(size_t))[cnt++] = i.second;
+    auto rt = ByteArray(sizeof(size_t) + subnodeAttr.size() * sizeof(NodeCoreAttr), tmp);
     delete[] tmp;
     return rt;
 }

@@ -19,6 +19,7 @@ public:
     inline const BytePtr end();
     inline const BytePtr operator[](const size_t& pos);
     inline const BytePtr operator[](const size_t& pos) const;
+    inline void print() const;
 
 private:
     Byte* _d;
@@ -33,4 +34,12 @@ const BytePtr ByteArray::begin() { return _d ? _d + sizeof(size_t) : nullptr; }
 const BytePtr ByteArray::end() { return _d ? _d + sizeof(size_t) + length() : nullptr; } //end() refers to the (length()+1)th pos of data area
 const BytePtr ByteArray::operator[](const size_t& pos) { return _d ? _d + sizeof(size_t) + pos : nullptr; }
 const BytePtr ByteArray::operator[](const size_t& pos) const { return _d ? _d + sizeof(size_t) + pos : nullptr; }
+void ByteArray::print() const
+{
+    std::cerr << "length:" << length() << ' ';
+    for (int i = 0; i < length(); i++) {
+        printf("%x", *(this->operator[](i)));
+    }
+    std::cerr << std::endl;
+}
 #endif

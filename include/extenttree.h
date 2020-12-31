@@ -5,15 +5,14 @@
 #include <bits/stdc++.h>
 using namespace std;
 //const int LogSumBlo = 11;
-const int SumBlo = 4086;
-typedef  unsigned long long LBA_t;
+const int SumBlo = DEVICE_SIZE_BLK;
+typedef unsigned long long LBA_t;
 class ExtentTree {
 public:
-
     struct node {
         int bl, logbl, maxleft, ref, left, l, r; //bl: size of extent
         LBA_t flag;
-        node* lson, * rson;
+        node *lson, *rson;
         node()
         {
             bl = logbl = left = maxleft = ref = l = r = 0;
@@ -27,10 +26,10 @@ public:
     ExtentTree(const ByteArray& d);
     ByteArray dataExport() const;
     //ExtentTree();
-    list<pair<LBA_t, LBA_t> > allocateExtents(LBA_t blks); //new (extents)
-    list<pair<LBA_t, LBA_t> > allocateExtent(int references); //new (extents)
+    list<pair<LBA_t, LBA_t>> allocateExtents(LBA_t blks); //new (extents)
+    list<pair<LBA_t, LBA_t>> allocateExtent(int references); //new (extents)
     void releaseExtent(LBA_t startpos, LBA_t length);
-    inline void releaseExtent(list<pair<LBA_t, LBA_t> > extents);
+    inline void releaseExtent(list<pair<LBA_t, LBA_t>> extents);
     void Release(node* p, int startpos, LBA_t length); //releaseextent
     void setRoot(int x, int sumblo, int l);
     void pushup(node* p); //opreation on tree
@@ -49,7 +48,7 @@ private:
     //allocate extents by number of blocks, return extents sorted by ascending order(first:LBA,second:extentsize)
 };
 
-inline void ExtentTree::releaseExtent(list<pair<LBA_t, LBA_t > > extents)
+inline void ExtentTree::releaseExtent(list<pair<LBA_t, LBA_t>> extents)
 {
     /*   while (!extents.empty()) {
        int a, b;
@@ -66,4 +65,3 @@ inline void ExtentTree::releaseExtent(list<pair<LBA_t, LBA_t > > extents)
 }
 
 #endif
-

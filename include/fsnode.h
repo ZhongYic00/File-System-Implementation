@@ -57,6 +57,7 @@ protected:
 
 private:
     static inum_t newNodeNum();
+    inline void print() const;
 };
 
 //size_t FSNode::metaSize() const { return _metaSize; }
@@ -67,4 +68,5 @@ LBA_t FSNode::dataExtentLBA() const { return _dataLBA; }
 ull FSNode::refCount() const { return _refs; }
 inum_t FSNode::inum() const { return _inum; }
 void FSNode::updateDataExtentLBA(const LBA_t& addr) { _dataLBA = addr; }
+void FSNode::print() const { cerr << "inum:" << inum() << " ref:" << refCount() << " dLBA:" << _dataLBA << endl; }
 #endif // FSNODE_H

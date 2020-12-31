@@ -12,11 +12,13 @@
 #include "include/constants.h"
 #include <bits/stdc++.h>
 #include <fuse3/fuse.h>
+using namespace std;
 
 static FS fs;
 
 static inum_t parse(const char* path, inum_t& father, string& name)
 {
+    cerr << "call parse " << path << endl;
     inum_t inum = 0;
     int len = strlen(path);
     father = fs.rootInum();
@@ -29,6 +31,7 @@ static inum_t parse(const char* path, inum_t& father, string& name)
                 try {
                     inum = fs.querySubnodeInum(father, now);
                 } catch (string s) {
+                    cerr << s << endl;
                     if (i != len - 1)
                         return static_cast<ull>(-1);
                     else {
@@ -48,6 +51,7 @@ static inum_t parse(const char* path, inum_t& father, string& name)
 
 static void* fs_init(struct fuse_conn_info* conn, struct fuse_config* cfg)
 {
+    cerr << "call fs_init" << endl;
     fs.fsInit();
     return nullptr;
 }
@@ -62,6 +66,7 @@ static int fs_statfs(const char* path, struct statvfs* stbuf)
 }
 static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_info* fi)
 {
+    cerr << "call fs_getattr" << endl;
     stbuf->st_mode = S_IFDIR | 0777;
     stbuf->st_size = 4096;
     stbuf->st_nlink = 1;
@@ -72,22 +77,28 @@ static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_inf
 }
 static int fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, enum fuse_readdir_flags flags)
 {
+    cerr << "call fs_readdir" << endl;
     string s = "";
     inum_t fa = 0;
     struct stat st;
     auto file = parse(path, fa, s);
+    cerr << "get inum " << file << endl;
     list<NodeCoreAttr> ls;
     try {
         ls = fs.readDirectory(file);
     } catch (string s) {
+        cerr << s << endl;
         return -1;
     }
+    cerr << "subnodes: ";
     for (const auto& i : ls) {
+        cerr << i.name << ' ';
         memset(&st, 0, sizeof(st));
         st.st_mode = (fs.getInodeBase(i.addr).isDirectory() ? S_IFDIR : S_IFMT);
         if (filler(buf, i.name.c_str(), &st, 0, fuse_fill_dir_flags(0)))
             break;
     }
+    cerr << endl;
     return 0;
 }
 static int fs_open(const char* path, struct fuse_file_info* fi)

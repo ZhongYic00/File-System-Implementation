@@ -13,7 +13,7 @@ public:
         _extentTreeRendLBA = _extentTreeLBA = _extentTreeBakLBA;
         _inodeMapLBA = 0;
     }
-    inline LBA_t root() const;
+    inline inum_t root() const;
     inline LBA_t extentTreeLBA() const;
     inline LBA_t extentTreeBakLBA() const;
     inline LBA_t extentTreeRendLBA() const;
@@ -29,7 +29,7 @@ public:
     inline bool empty() const;
 
 private:
-    LBA_t _root;
+    inum_t _root;
     LBA_t _extentTreeLBA;
     LBA_t _extentTreeBakLBA;
     LBA_t _extentTreeRendLBA;
