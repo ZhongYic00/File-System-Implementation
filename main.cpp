@@ -4,15 +4,19 @@
 #include "Interface.cpp"
 #endif
 
-#define fuse_test
-//#define dbg
+//#define fuse_test
+#define dbg
 int main(int argc, char* argv[])
 {
 #ifdef dbg
-    FS fs;
-    fs.fsInit();
-    fs.fsExit();
-    fs.test();
+    //FS fs;
+    //fs.fsInit();
+    fs_init(nullptr, nullptr);
+    struct stat* buf = new struct stat;
+    fs_getattr("/BDM", buf, nullptr);
+    delete buf;
+    //fs.test();
+    //fs.fsExit();
 #endif
 #ifdef linux
 #ifdef fuse_test

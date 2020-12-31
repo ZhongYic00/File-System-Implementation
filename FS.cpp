@@ -3,6 +3,9 @@
 using std::cerr;
 using std::endl;
 #endif
+const auto standerizeLBA = [](const LBA_t& x) -> LBA_t {
+    return x & ((1ULL << ACTUAL_LBA_BITS) - 1);
+};
 FS::FS()
     : writeStackSize(0)
 {
@@ -17,14 +20,9 @@ void FS::fsInit()
     cerr << "call fsInit()" << endl;
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     HAL.read(SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
-    cerr << 1 << endl;
-    ByteArray(BLOCKSIZE_BYTE, superblockTmp).print();
     memcpy(&superblock, superblockTmp, SUPERBLOCK_REAL_SIZE);
-    cerr << 2 << endl;
     if (!superblock.isValid()) {
         HAL.read(BAK_SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
-        cerr << "here";
-        ByteArray(BLOCKSIZE_BYTE, superblockTmp).print();
         if (!superblock.isValid()) {
             if (!superblock.empty())
                 exit(1);
@@ -62,7 +60,7 @@ void FS::fsMake()
     superblock = Superblock();
     extentTree = new ExtentTree(ByteArray(0, nullptr));
     cerr << "extent-tree init over" << endl;
-    inodeMap = new InodeMap(ByteArray(0, nullptr));
+    inodeMap = new InodeMap(ByteArray());
     auto roottmp = new DirectoryNode(FSNode(), ByteArray());
     dynamic_cast<DirectoryNode*>(roottmp)->updateDataExtentLBA(0);
     saveInode(*roottmp);
@@ -143,13 +141,14 @@ ByteArray FS::getData(const LBA_t& addr)
 }
 void FS::saveInode(const FSNode& node)
 {
+    cerr << "call saveInode " << node.inum() << endl;
     inum_t inum = node.inum();
     smallDataWrite(node.nodeDataExport(), [=](LBA_t addr) mutable -> void {
         cerr << "inode " << inum << " finally saved at " << addr << "(" << bitset<64>(addr).to_string() << ")" << endl;
         LBA_t ori = inodeMap->queryLBA(inum);
         if (ori != 0) {
             //delete the origin inode
-            extentTree->releaseExtent(ori, 1);
+            extentTree->releaseExtent(standerizeLBA(ori), 0);
         }
         inodeMap->updateLBA(inum, addr); //problems may occur since inodemap may have been destructed when this function called
     });
@@ -202,20 +201,17 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
 ByteArray FS::smallDataRead(const LBA_t& addr)
 {
     auto tmp = new Byte[BLOCKSIZE_BYTE];
-    auto standerizeLBA = [](const LBA_t& x) -> LBA_t {
-        return x & ((1ULL << ACTUAL_LBA_BITS) - 1);
-    };
     HAL.read(standerizeLBA(addr), 1, tmp);
     bitset<BITMAP_BITS> bitmap;
     for (int i = 0; i < BITMAP_BITS / (sizeof(unsigned long) * 8); i++) {
         //bitmap <<= sizeof(unsigned long) * 8;
         auto ttmp = bitset<BITMAP_BITS>(reinterpret_cast<unsigned long*>(tmp)[i]);
-        cerr << ttmp << ' ';
+        //cerr << ttmp << ' ';
         ttmp <<= (sizeof(unsigned long) * 8 * i);
         bitmap |= ttmp;
-        cerr << bitset<32>(reinterpret_cast<unsigned long*>(tmp)[i]) << ' ' << ttmp << endl;
+        //cerr << bitset<32>(reinterpret_cast<unsigned long*>(tmp)[i]) << ' ' << ttmp << endl;
     }
-    cerr << "raw end" << endl;
+    //cerr << "raw end" << endl;
     cerr << "bitmap:" << bitmap << endl;
     auto findPieces = [](int index, bitset<BITMAP_BITS> bitmap) -> LBA_t {
         if (index < 0)
@@ -411,15 +407,16 @@ void FS::freeWriteStack()
     cerr << "save bitmap:" << btmp << endl;
     for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, btmp >>= sizeof(unsigned long) * 8) {
         *reinterpret_cast<unsigned long*>(buffer + i) = btmp.to_ulong();
-        cerr << bitset<32>(btmp.to_ulong()) << ' ';
+        //cerr << bitset<32>(btmp.to_ulong()) << ' ';
     }
-    cerr << "raw end" << endl;
+    //cerr << "raw end" << endl;
     //write to disk
     HAL.write(dest.first, buffer, 1);
     delete[] buffer;
 }
 inum_t FS::querySubnodeInum(const inum_t& parent, const string& name)
 {
+    cerr << "call FS::querySubnodeInum " << parent << ' ' << name << endl;
     auto prnt = getInode(parent);
     if (!prnt->isValid()) {
         delete prnt;
@@ -434,6 +431,7 @@ inum_t FS::querySubnodeInum(const inum_t& parent, const string& name)
         delete prnt;
         return rt;
     } catch (string s) {
+        cerr << "maybe not found" << endl;
         throw std::move(s);
     }
 }
@@ -456,4 +454,9 @@ list<NodeCoreAttr> FS::readDirectory(const inum_t& inum)
 void FS::test()
 {
     readDirectory(rootInum());
+    createNode(rootInum(), "a", 0);
+    auto l = readDirectory(rootInum());
+    for (auto i : l) {
+        cerr << i.addr << ' ' << i.name << endl;
+    }
 }

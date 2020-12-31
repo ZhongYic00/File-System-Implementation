@@ -43,10 +43,13 @@ void DirectoryNode::removeSubnode(const string& nodeName) { this->removeSubnode(
 void FileNode::reduceRef() { --_refs; }
 inum_t DirectoryNode::getSubnode(const string& nodeName)
 {
+    cerr << "call DirectoryNode::getSubnode" << endl;
     if (subnodeAttr.count(calcHash(nodeName)))
         return subnodeAttr[calcHash(nodeName)].addr;
-    else
-        throw "node not found!";
+    else {
+        cerr << "node not found" << endl;
+        return FSNode::NodeTypes::NodeNull;
+    }
 }
 list<NodeCoreAttr> DirectoryNode::readDir() const
 {

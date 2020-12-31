@@ -30,10 +30,12 @@ static inum_t parse(const char* path, inum_t& father, string& name)
             if (now != "") {
                 try {
                     inum = fs.querySubnodeInum(father, now);
+                    if (inum == FSNode::NodeNull)
+                        return inum;
                 } catch (string s) {
                     cerr << s << endl;
                     if (i != len - 1)
-                        return static_cast<ull>(-1);
+                        return FSNode::NodeInvalid;
                     else {
                         name = now;
                         inum = father;
@@ -67,7 +69,16 @@ static int fs_statfs(const char* path, struct statvfs* stbuf)
 static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_info* fi)
 {
     cerr << "call fs_getattr" << endl;
-    stbuf->st_mode = S_IFDIR | 0777;
+    string s = "";
+    inum_t fa = 0;
+    struct stat st;
+    try {
+        auto file = parse(path, fa, s);
+        stbuf->st_mode = 0777 | fs.getInodeBase(file).isDirectory() ? (__S_IFDIR) : 0;
+    } catch (string s) {
+        cerr << s << endl;
+        return 0;
+    }
     stbuf->st_size = 4096;
     stbuf->st_nlink = 1;
     stbuf->st_uid = 0;

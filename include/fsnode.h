@@ -17,7 +17,8 @@ class FSNode {
 
 public:
     enum NodeTypes {
-        NodeInvalid
+        NodeInvalid = static_cast<inum_t>(-1),
+        NodeNull = static_cast<inum_t>(-2)
     };
     FSNode();
     FSNode(const inum_t& type);

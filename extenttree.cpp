@@ -170,7 +170,7 @@ list<pair<LBA_t, LBA_t>> ExtentTree::allocateExtents(LBA_t blks)
 }
 list<pair<LBA_t, LBA_t>> ExtentTree::allocateExtent(int references)
 {
-    cerr << "call allocateExtent" << references << endl;
+    cerr << "call allocateExtent " << references << endl;
     list<pair<LBA_t, LBA_t>> X;
     int now = 1;
     for (int i = 0; i < ArrayNum; i++) {
@@ -188,6 +188,7 @@ list<pair<LBA_t, LBA_t>> ExtentTree::allocateExtent(int references)
 }
 void ExtentTree::releaseExtent(LBA_t startpos, LBA_t length)
 {
+    cerr << "call releaseExtent " << startpos << ' ' << length << endl;
     int now = 1;
     length = pow(2, length);
     for (int i = 0; i < ArrayNum; i++) {

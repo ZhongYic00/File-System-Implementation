@@ -25,5 +25,9 @@ void InodeMap::remove(const inum_t& i)
         inodes.erase(i);
     throw "inode not found";
 }
-void InodeMap::updateLBA(const inum_t& i, const LBA_t& addr) { inodes[i] = addr; }
+void InodeMap::updateLBA(const inum_t& i, const LBA_t& addr)
+{
+    inodes[i] = addr;
+    cerr << "update inode-mapping: " << i << "->" << addr << endl;
+}
 #endif
