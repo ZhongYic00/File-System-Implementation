@@ -18,10 +18,13 @@ void FS::fsInit()
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     HAL.read(SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
     cerr << 1 << endl;
+    ByteArray(BLOCKSIZE_BYTE, superblockTmp).print();
     memcpy(&superblock, superblockTmp, SUPERBLOCK_REAL_SIZE);
     cerr << 2 << endl;
     if (!superblock.isValid()) {
         HAL.read(BAK_SUPERBLOCK_LBA, SUPERBLOCK_SIZE_BLK, superblockTmp);
+        cerr << "here";
+        ByteArray(BLOCKSIZE_BYTE, superblockTmp).print();
         if (!superblock.isValid()) {
             if (!superblock.empty())
                 exit(1);
