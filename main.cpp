@@ -10,14 +10,12 @@
 int main(int argc, char* argv[])
 {
 #ifdef unit
-    auto node = new DirectoryNode(FSNode(), ByteArray());
-    node->addSubnode(1, "a");
-    node->updateDataExtentLBA(2);
-    node->print();
-    auto nodetmp = node->nodeDataExport();
-    auto dirtmp = node->dataExport();
-    auto node1 = new DirectoryNode(FSNode(nodetmp), dirtmp);
-    node1->print();
+    fs_init(nullptr, nullptr);
+    fs_mknod("/aa", 0, 0);
+    char tmp[] = "hello";
+    char ttmp[20];
+    fs_write("/aa", tmp, 6, 0, nullptr);
+    fs_read("/aa", ttmp, 20, 0, nullptr);
 #endif
 #ifdef dbg
     FS fs;
@@ -29,9 +27,6 @@ int main(int argc, char* argv[])
 #ifdef fuse_test
     return fuse_main(argc, argv, &fs_operations, NULL);
 #endif
-    /*inum_t fa;
-    string name;
-    cerr << parse("/", fa, name);*/
 #else
     return 0;
 #endif

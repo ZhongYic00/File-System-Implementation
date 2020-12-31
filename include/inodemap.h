@@ -22,7 +22,7 @@ LBA_t InodeMap::queryLBA(const inum_t& i)
 void InodeMap::remove(const inum_t& i)
 {
     if (inodes.count(i))
-        inodes.erase(i);
+        return (void)inodes.erase(i);
     throw "inode not found";
 }
 void InodeMap::updateLBA(const inum_t& i, const LBA_t& addr)

@@ -33,6 +33,7 @@ void DirectoryNode::addSubnode(const inum_t& addr, const string& nodeName)
         }
     } else {
         subnodeAttr[hsh] = { addr, nodeName };
+        ++_refs;
     }
     tm.mTimeChange();
 }
@@ -88,6 +89,7 @@ ByteArray DirectoryNode::dataExport()
 FileNode::FileNode()
     : FSNode()
 {
+    _refs = 1;
 }
 FileNode::FileNode(const FSNode& node)
     : FSNode(node)

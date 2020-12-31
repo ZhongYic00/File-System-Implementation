@@ -30,7 +30,7 @@ static inum_t parse(const char* path, inum_t& father, string& name)
     string now = "";
     for (int i = 0; i < len; i++) {
         if (now == "")
-            inum = father;
+            father = inum;
         if (pth[i] == '/') {
             if (now != "") {
                 try {
@@ -128,26 +128,36 @@ static int fs_open(const char* path, struct fuse_file_info* fi)
 }
 static int fs_read(const char* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi)
 {
+    cerr << endl
+         << "call fs_read " << path << ' ' << size << ' ' << offset << endl;
     //access judgement, using fi
     if (offset < 0)
         return -1;
     string s = "";
     inum_t fa = 0;
     auto tmp = fs.readFile(parse(path, fa, s));
+    if (!tmp.length())
+        return 0;
     memcpy(buf, tmp[offset], size);
     return size;
 }
 static int fs_write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* fi)
 {
+    cerr << endl
+         << "call fs_write " << path << ' ' << size << ' ' << offset << endl;
     //access judgement, using fi
     if (offset < 0)
         return -1;
     string s = "";
     inum_t fa = 0;
     auto file = parse(path, fa, s);
-    auto tmp = fs.readFile(file);
-    memcpy(tmp[offset], buf, size);
-    fs.writeFile(file, tmp);
+    auto ori = fs.readFile(file);
+    size_t sz = max(ori.length(), size + offset);
+    BytePtr tmp = new Byte[sz];
+    memset(tmp, 0, sz);
+    memcpy(tmp, ori.d_ptr(), ori.length());
+    memcpy(tmp + offset, buf, size);
+    fs.writeFile(file, ByteArray(sz, tmp));
     return 0;
 }
 static int fs_access(const char* path, int)
@@ -207,12 +217,15 @@ static int fs_rmnod(const char* path)
 }
 static int fs_rmdir(const char* path)
 {
+    cerr << endl
+         << "call fs_rmdir" << endl;
     string s = "";
     inum_t father = 0;
     auto file = parse(path, father, s);
     try {
         fs.removeNode(father, file);
     } catch (const char* s) {
+        cerr << s << endl;
         return -1;
     }
     return 0;
@@ -226,6 +239,7 @@ static struct fuse_operations fs_operations = {
     .chmod = fs_chmod,
     .open = fs_open,
     .read = fs_read,
+    .write = fs_write,
     .readdir = fs_readdir,
     .init = fs_init,
     .destroy = fs_destroy,

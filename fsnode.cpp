@@ -7,7 +7,7 @@ FSNode::FSNode()
     : _inum(newNodeNum())
     , _dataLBA(0)
     , _totalSize(0)
-    , _refs(1)
+    , _refs(0)
 {
     print();
 }

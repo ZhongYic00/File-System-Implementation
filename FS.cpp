@@ -265,13 +265,15 @@ list<pair<LBA_t, LBA_t>> FS::extentHeadAutoRead(LBA_t addr)
         return static_cast<bool>(x >> ACTUAL_LBA_BITS);
     };
     list<pair<LBA_t, LBA_t>> rt;
+    if (addr == 0)
+        return rt;
     do {
         if (isLarge(addr)) {
             auto cur = largeDataReadHead(addr);
-            rt.push_back({ addr, cur.first });
+            rt.push_back({ standerizeLBA(addr), cur.first });
             addr = cur.second;
         } else {
-            rt.push_back({ addr, 1 });
+            rt.push_back({ standerizeLBA(addr), 1 });
             addr = 0;
         }
     } while (addr);
@@ -280,7 +282,7 @@ list<pair<LBA_t, LBA_t>> FS::extentHeadAutoRead(LBA_t addr)
 ByteArray FS::readFile(const inum_t& inum)
 {
     FSNode inode(extentAutoRead(inodeMap->queryLBA(inum)));
-    if (inode.isValid()) {
+    if (!inode.isValid()) {
         throw "inode read error";
         return ByteArray();
     }
@@ -295,7 +297,7 @@ ByteArray FS::readFile(const inum_t& inum)
 void FS::writeFile(const inum_t& inum, const ByteArray& nwdata)
 {
     FSNode inode(extentAutoRead(inodeMap->queryLBA(inum)));
-    if (inode.isValid()) {
+    if (!inode.isValid()) {
         throw "inode read error";
     }
     if (inode.isDirectory()) {
@@ -310,8 +312,9 @@ void FS::writeFile(const inum_t& inum, const ByteArray& nwdata)
 void FS::removeNode(const inum_t& parent, const inum_t& node)
 {
     //what if there're subnodes under 'node' ?
+    cerr << "call removeNode" << endl;
     auto prnt = getInode(parent);
-    if (prnt->isValid()) {
+    if (!prnt->isValid()) {
         delete prnt;
         throw "inode read error";
     }
@@ -321,6 +324,8 @@ void FS::removeNode(const inum_t& parent, const inum_t& node)
     }
     removeNodes(node);
     dynamic_cast<DirectoryNode*>(prnt)->removeSubnodeByInum(node);
+    prnt->updateDataExtentLBA(
+        largeDataWrite(dynamic_cast<DirectoryNode*>(prnt)->dataExport()));
     saveInode(*prnt);
     delete prnt;
 }
@@ -328,16 +333,16 @@ void FS::removeNodes(const inum_t& node)
 {
     //release subnodes
     auto nd = getInode(node);
-    if (nd->isValid()) {
+    if (!nd->isValid()) {
         delete nd;
         throw "inode read error";
     }
     //if nd is a dir, recursively remove all subnodes. elif nd is a file, just reduce the reference count.
     if (nd->isDirectory()) {
-        for (auto subnd : readDirectory(node)) {
+        /*for (auto subnd : readDirectory(node)) {
             removeNodes(subnd.addr);
             dynamic_cast<DirectoryNode*>(nd)->removeSubnodeByInum(subnd.addr);
-        }
+        }*/
         //dynamic_cast<DirectoryNode*>(nd)->resetRef();
     } else {
         dynamic_cast<FileNode*>(nd)->reduceRef();
@@ -349,7 +354,7 @@ void FS::removeNodes(const inum_t& node)
         //release data
         extentTree->releaseExtent(extentHeadAutoRead(nd->dataExtentLBA())); //standerization is processed in extentTree func
         //release meta-data
-        extentTree->releaseExtent(inodeMap->queryLBA(node), 1);
+        extentTree->releaseExtent(standerizeLBA(inodeMap->queryLBA(node)), 0);
         inodeMap->remove(node);
     } else {
         //here nd can only be a file-node, otherwise something must be wrong
