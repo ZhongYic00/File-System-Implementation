@@ -177,7 +177,8 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
         return rt;
         //bit_count(cell((size+blks*64+blks*8)/4096))=blks
     };
-    data.print();
+    /*cerr << "writing data to disk(large):" << endl;
+    data.print();*/
     auto newExtent = [](LBA_t prev, BytePtr st, u8 blks_k, size_t sz) -> BytePtr {
         auto rt = new Byte[(1ULL << blks_k) * BLOCKSIZE_BYTE];
         memset(rt, 0, (1ULL << blks_k) * BLOCKSIZE_BYTE);
@@ -193,8 +194,8 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
     size_t pos = 0;
     for (auto i : extents) {
         auto extent = newExtent(prev, data[pos], i.second, data.length() - pos); //extent is a continous memory segment which stores the next_LBA ptr at head, followed by size of the extent(measured by block, use 2^k to represent), and data after that
-        cerr << "writing extent offset:" << pos << " size:2^" << i.second << endl;
-        ByteArray((1ULL << i.second) * BLOCKSIZE_BYTE, extent).print();
+        /*cerr << "writing extent offset:" << pos << " size:2^" << i.second << endl;
+        ByteArray((1ULL << i.second) * BLOCKSIZE_BYTE, extent).print();*/
         HAL.write(i.first, reinterpret_cast<BytePtr>(extent), 1ULL << i.second);
         pos += (1ULL << i.second) * BLOCKSIZE_BYTE - HEAD_RESERVED;
         delete[] extent;
@@ -374,14 +375,18 @@ void FS::createNode(const inum_t& parent, const string& name, const bool& isDire
     //save dentry
     ori->updateDataExtentLBA(
         largeDataWrite(dynamic_cast<DirectoryNode*>(ori)->dataExport()));
+    /*ori->print();
+    ori->nodeDataExport().print();*/
     //save node
     saveInode(*ori);
+    getInode(parent)->nodeDataExport().print();
     saveInode(*nwNode);
     delete ori;
     delete nwNode;
 }
 void FS::freeWriteStack()
 {
+    cerr << "call freeWriteStack" << endl;
     auto pieces = [](size_t sz) {
         return sz / PIECE_SIZE + sz & (PIECE_SIZE - 1);
     }; //count how many pieces is needed
@@ -397,25 +402,34 @@ void FS::freeWriteStack()
         auto top = writeStack.top();
         writeStack.pop();
         //write data
-        top.first.print();
+        /*cerr << "writing data to disk(small):" << endl;
+        top.first.print();*/
         memcpy(buf, top.first.d_ptr(), top.first.length());
+        //cerr << "buffer:" << endl;
+        //ByteArray(BLOCKSIZE_BYTE / 4, buffer).print();
         top.second(dest.first | (1ULL * kth << ACTUAL_LBA_BITS));
         //record bitmap
         btmp[(buf - buffer) / PIECE_SIZE] = 1; //buf-buffer=delta bytes
         //next
         buf += pieces(top.first.length());
     }
+    //cerr << "buffer:" << endl;
+    //ByteArray(BLOCKSIZE_BYTE / 4, buffer).print();
     //cerr << ((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize << endl;
     btmp[((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize] = 1;
     writeStackSize = 0;
     //write bitmap
     //cerr << "save bitmap:" << btmp << endl;
-    for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, btmp >>= sizeof(unsigned long) * 8) {
+    for (int i = 0; i < BITMAP_BITS / sizeof(unsigned long); i += sizeof(unsigned long), btmp >>= sizeof(unsigned long) * 8) {
         *reinterpret_cast<unsigned long*>(buffer + i) = btmp.to_ulong();
+        /*cerr << "buffer:" << endl;
+        ByteArray(BLOCKSIZE_BYTE / 4, buffer).print();*/
         //cerr << bitset<32>(btmp.to_ulong()) << ' ';
     }
     //cerr << "raw end" << endl;
     //write to disk
+    /*cerr << "buffer:" << endl;
+    ByteArray(BLOCKSIZE_BYTE, buffer).print();*/
     HAL.write(dest.first, buffer, 1);
     delete[] buffer;
 }

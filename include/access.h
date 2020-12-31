@@ -31,5 +31,9 @@ private:
 
 bool Access::isDirectory() const { return type; }
 //To judge whether this node is a directory.
-void Access::setDirectory() { type = 1; }
+void Access::setDirectory()
+{
+    type = 1;
+    getHammingCode();
+}
 #endif // ACCESS_H

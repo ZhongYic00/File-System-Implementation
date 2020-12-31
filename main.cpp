@@ -4,10 +4,21 @@
 #include "Interface.cpp"
 #endif
 
-//#define fuse_test
-#define dbg
+#define fuse_test
+//#define dbg
+//#define unit
 int main(int argc, char* argv[])
 {
+#ifdef unit
+    auto node = new DirectoryNode(FSNode(), ByteArray());
+    node->addSubnode(1, "a");
+    node->updateDataExtentLBA(2);
+    node->print();
+    auto nodetmp = node->nodeDataExport();
+    auto dirtmp = node->dataExport();
+    auto node1 = new DirectoryNode(FSNode(nodetmp), dirtmp);
+    node1->print();
+#endif
 #ifdef dbg
     FS fs;
     fs.fsInit();

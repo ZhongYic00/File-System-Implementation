@@ -73,7 +73,8 @@ static int fs_statfs(const char* path, struct statvfs* stbuf)
 }
 static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_info* fi)
 {
-    cerr << "call fs_getattr" << endl;
+    cerr << endl
+         << "call fs_getattr" << endl;
     string s = "";
     inum_t fa = 0;
     struct stat st;
@@ -96,7 +97,8 @@ static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_inf
 }
 static int fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, enum fuse_readdir_flags flags)
 {
-    cerr << "call fs_readdir" << endl;
+    cerr << endl
+         << "call fs_readdir" << endl;
     string s = "";
     inum_t fa = 0;
     struct stat st;
@@ -174,14 +176,17 @@ static int fs_mknod(const char* path, mode_t mod, dev_t dev)
 }
 static int fs_mkdir(const char* path, mode_t mod)
 {
+    cerr << endl
+         << "call fs_mkdir" << endl;
     string name = "";
     inum_t fa = 0;
     auto file = parse(path, fa, name);
     if (name == "") {
-        throw "No directory name detected.";
+        cerr << "No directory name detected.";
         return -1;
     }
     try {
+        cerr << "creat directory '" << name << "' under " << file << endl;
         fs.createNode(file, name, 1);
     } catch (const char* s) {
         return -1;

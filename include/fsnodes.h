@@ -20,6 +20,7 @@ public:
     inline list<NodeCoreAttr> readDir() const;
     //inline void resetRef();
     ByteArray dataExport();
+    inline void print() const;
 
 protected:
     static hash_t calcHash(const string& str);
@@ -59,5 +60,12 @@ list<NodeCoreAttr> DirectoryNode::readDir() const
         rt.push_back(i.second);
     }
     return rt;
+}
+void DirectoryNode::print() const
+{
+    FSNode::print();
+    for (auto i : subnodeAttr)
+        cerr << "{" << i.second.addr << ',' << i.second.name << "} ";
+    cerr << endl;
 }
 #endif //FSNODES_H

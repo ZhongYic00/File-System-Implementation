@@ -34,6 +34,7 @@ public:
     //ull directSubnodes() const;
     inline ull refCount() const;
     inline void updateDataExtentLBA(const LBA_t& addr);
+    inline void print() const;
 
 protected:
     Access access;
@@ -58,7 +59,6 @@ protected:
 
 private:
     static inum_t newNodeNum();
-    inline void print() const;
 };
 
 //size_t FSNode::metaSize() const { return _metaSize; }

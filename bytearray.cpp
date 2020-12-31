@@ -26,7 +26,7 @@ ByteArray::ByteArray(const std::list<ByteArray>& x)
         l += i.length();
     _d = new Byte[sizeof(size_t) + l];
     *reinterpret_cast<size_t*>(_d) = l;
-    l = 0;
+    l = sizeof(size_t);
     for (auto i : x) {
         memcpy(_d + l, i.d_ptr(), i.length());
         l += i.length();
