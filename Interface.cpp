@@ -31,13 +31,13 @@ static inum_t parse(const char* path, inum_t& father, string& name)
     for (int i = 0; i < len; i++) {
         if (now == "")
             inum = father;
-        if (pth[i] == '/' || i == len - 1) {
+        if (pth[i] == '/') {
             if (now != "") {
                 try {
                     inum = fs.querySubnodeInum(father, now);
                     if (inum == FSNode::NodeNull)
                         return inum;
-                } catch (string s) {
+                } catch (const char* s) {
                     cerr << s << endl;
                     if (i != len - 1)
                         return FSNode::NodeInvalid;
@@ -79,10 +79,13 @@ static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_inf
     struct stat st;
     try {
         auto file = parse(path, fa, s);
-        stbuf->st_mode = 0777 | fs.getInodeBase(file).isDirectory() ? (__S_IFDIR) : 0;
-    } catch (string s) {
+        if (s != "")
+            return -2;
+        stbuf->st_mode = 0777 | (fs.getInodeBase(file).isDirectory() ? (S_IFDIR) : (S_IFREG));
+    } catch (const char* s) {
         cerr << s << endl;
-        return 0;
+        stbuf->st_mode = 0;
+        return -2;
     }
     stbuf->st_size = 4096;
     stbuf->st_nlink = 1;
@@ -102,7 +105,7 @@ static int fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler, off_t
     list<NodeCoreAttr> ls;
     try {
         ls = fs.readDirectory(file);
-    } catch (string s) {
+    } catch (const char* s) {
         cerr << s << endl;
         return -1;
     }
@@ -164,7 +167,7 @@ static int fs_mknod(const char* path, mode_t mod, dev_t dev)
     }
     try {
         fs.createNode(file, name, 0);
-    } catch (string s) {
+    } catch (const char* s) {
         return -1;
     }
     return 0;
@@ -180,7 +183,7 @@ static int fs_mkdir(const char* path, mode_t mod)
     }
     try {
         fs.createNode(file, name, 1);
-    } catch (string s) {
+    } catch (const char* s) {
         return -1;
     }
     return 0;
@@ -192,7 +195,7 @@ static int fs_rmnod(const char* path)
     auto file = parse(path, father, s);
     try {
         fs.removeNode(father, file);
-    } catch (string s) {
+    } catch (const char* s) {
         return -1;
     }
     return 0;
@@ -204,7 +207,7 @@ static int fs_rmdir(const char* path)
     auto file = parse(path, father, s);
     try {
         fs.removeNode(father, file);
-    } catch (string s) {
+    } catch (const char* s) {
         return -1;
     }
     return 0;

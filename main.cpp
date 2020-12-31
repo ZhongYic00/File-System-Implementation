@@ -9,13 +9,9 @@
 int main(int argc, char* argv[])
 {
 #ifdef dbg
-    //FS fs;
-    //fs.fsInit();
-    fs_init(nullptr, nullptr);
-    struct stat* buf = new struct stat;
-    fs_getattr("/BDM", buf, nullptr);
-    delete buf;
-    //fs.test();
+    FS fs;
+    fs.fsInit();
+    fs.test();
     //fs.fsExit();
 #endif
 #ifdef linux

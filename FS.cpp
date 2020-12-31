@@ -177,9 +177,11 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
         return rt;
         //bit_count(cell((size+blks*64+blks*8)/4096))=blks
     };
-    auto newExtent = [](LBA_t prev, BytePtr st, u8 blks_k) -> BytePtr {
+    data.print();
+    auto newExtent = [](LBA_t prev, BytePtr st, u8 blks_k, size_t sz) -> BytePtr {
         auto rt = new Byte[(1ULL << blks_k) * BLOCKSIZE_BYTE];
-        memcpy(rt + HEAD_RESERVED, st, (1ULL << blks_k) * BLOCKSIZE_BYTE - HEAD_RESERVED);
+        memset(rt, 0, (1ULL << blks_k) * BLOCKSIZE_BYTE);
+        memcpy(rt + HEAD_RESERVED, st, std::min((1ULL << blks_k) * BLOCKSIZE_BYTE - HEAD_RESERVED, 1ULL * sz));
         *reinterpret_cast<LBA_t*>(rt) = prev;
         *reinterpret_cast<u8*>(rt + sizeof(LBA_t)) = blks_k;
         return rt;
@@ -190,7 +192,9 @@ LBA_t FS::largeDataWrite(const ByteArray& data) //数据组织方向好像反了
     LBA_t prev = 0;
     size_t pos = 0;
     for (auto i : extents) {
-        auto extent = newExtent(prev, data[pos], i.second); //extent is a continous memory segment which stores the next_LBA ptr at head, followed by size of the extent(measured by block, use 2^k to represent), and data after that
+        auto extent = newExtent(prev, data[pos], i.second, data.length() - pos); //extent is a continous memory segment which stores the next_LBA ptr at head, followed by size of the extent(measured by block, use 2^k to represent), and data after that
+        cerr << "writing extent offset:" << pos << " size:2^" << i.second << endl;
+        ByteArray((1ULL << i.second) * BLOCKSIZE_BYTE, extent).print();
         HAL.write(i.first, reinterpret_cast<BytePtr>(extent), 1ULL << i.second);
         pos += (1ULL << i.second) * BLOCKSIZE_BYTE - HEAD_RESERVED;
         delete[] extent;
@@ -212,7 +216,7 @@ ByteArray FS::smallDataRead(const LBA_t& addr)
         //cerr << bitset<32>(reinterpret_cast<unsigned long*>(tmp)[i]) << ' ' << ttmp << endl;
     }
     //cerr << "raw end" << endl;
-    cerr << "bitmap:" << bitmap << endl;
+    //cerr << "bitmap:" << bitmap << endl;
     auto findPieces = [](int index, bitset<BITMAP_BITS> bitmap) -> LBA_t {
         if (index < 0)
             return -1;
@@ -355,6 +359,7 @@ void FS::removeNodes(const inum_t& node)
 
 void FS::createNode(const inum_t& parent, const string& name, const bool& isDirectory)
 {
+    cerr << "call createNode" << endl;
     auto ori = getInode(parent);
     if (!ori->isDirectory()) {
         delete ori;
@@ -400,11 +405,11 @@ void FS::freeWriteStack()
         //next
         buf += pieces(top.first.length());
     }
-    cerr << ((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize << endl;
+    //cerr << ((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize << endl;
     btmp[((BITMAP_BITS) / 8) / PIECE_SIZE + writeStackSize] = 1;
     writeStackSize = 0;
     //write bitmap
-    cerr << "save bitmap:" << btmp << endl;
+    //cerr << "save bitmap:" << btmp << endl;
     for (int i = 0; i < BITMAP_BITS; i += sizeof(unsigned long) * 8, btmp >>= sizeof(unsigned long) * 8) {
         *reinterpret_cast<unsigned long*>(buffer + i) = btmp.to_ulong();
         //cerr << bitset<32>(btmp.to_ulong()) << ' ';
@@ -430,9 +435,9 @@ inum_t FS::querySubnodeInum(const inum_t& parent, const string& name)
         auto rt = dynamic_cast<DirectoryNode*>(prnt)->getSubnode(name);
         delete prnt;
         return rt;
-    } catch (string s) {
-        cerr << "maybe not found" << endl;
-        throw std::move(s);
+    } catch (const char* s) {
+        //cerr << "maybe not found" << endl;
+        throw s;
     }
 }
 list<NodeCoreAttr> FS::readDirectory(const inum_t& inum)
@@ -456,6 +461,7 @@ void FS::test()
     readDirectory(rootInum());
     createNode(rootInum(), "a", 0);
     auto l = readDirectory(rootInum());
+    cerr << "dir:" << endl;
     for (auto i : l) {
         cerr << i.addr << ' ' << i.name << endl;
     }

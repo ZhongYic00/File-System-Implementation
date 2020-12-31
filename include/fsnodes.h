@@ -48,6 +48,7 @@ inum_t DirectoryNode::getSubnode(const string& nodeName)
         return subnodeAttr[calcHash(nodeName)].addr;
     else {
         cerr << "node not found" << endl;
+        throw "node not found";
         return FSNode::NodeTypes::NodeNull;
     }
 }

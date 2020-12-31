@@ -59,6 +59,8 @@ ByteArray FS::extentAutoRead(const LBA_t& addr)
 inum_t FS::rootInum() const { return superblock.root(); }
 FSNode FS::getInodeBase(const inum_t& inum)
 {
+    if (inum >= FSNode::NodeNull) //bug may occur if processed here
+        throw "node not found";
     auto tmp = getInode(inum);
     auto rt = *tmp;
     delete tmp;
