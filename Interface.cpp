@@ -19,14 +19,19 @@ static FS fs;
 static inum_t parse(const char* path, inum_t& father, string& name)
 {
     cerr << "call parse " << path << endl;
+    string pth = string(path);
     inum_t inum = 0;
-    int len = strlen(path);
+    int len = pth.length();
+    if (pth[len - 1] != '/') {
+        pth += '/';
+        len++;
+    }
     father = fs.rootInum();
     string now = "";
     for (int i = 0; i < len; i++) {
         if (now == "")
             inum = father;
-        if (path[i] == '/' || i == len - 1) {
+        if (pth[i] == '/' || i == len - 1) {
             if (now != "") {
                 try {
                     inum = fs.querySubnodeInum(father, now);
@@ -46,7 +51,7 @@ static inum_t parse(const char* path, inum_t& father, string& name)
             }
             continue;
         }
-        now += path[i];
+        now += pth[i];
     }
     return inum;
 }
