@@ -15,8 +15,10 @@ public:
     void getHammingCode();
     bool isValid() const;
     int chmod(string s);
+    inline void chmod(mode_t m);
     inline bool isDirectory() const;
     inline void setDirectory();
+    inline mode_t mod() const;
 
 private:
     CheckCode checkCode1 : 1;
@@ -34,6 +36,17 @@ bool Access::isDirectory() const { return type; }
 void Access::setDirectory()
 {
     type = 1;
+    getHammingCode();
+}
+mode_t Access::mod() const
+{
+    return (mode_t)owner << 6 | (mode_t)root << 3 | (mode_t)other;
+}
+void Access::chmod(mode_t m)
+{
+    owner = m >> 6;
+    root = m >> 3 & (1 << 3 - 1);
+    other = m & (1 << 3 - 1);
     getHammingCode();
 }
 #endif // ACCESS_H

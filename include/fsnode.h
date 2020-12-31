@@ -35,6 +35,8 @@ public:
     inline ull refCount() const;
     inline void updateDataExtentLBA(const LBA_t& addr);
     inline void print() const;
+    inline void chmod(mode_t m);
+    inline mode_t mod() const;
 
 protected:
     Access access;
@@ -69,5 +71,7 @@ LBA_t FSNode::dataExtentLBA() const { return _dataLBA; }
 ull FSNode::refCount() const { return _refs; }
 inum_t FSNode::inum() const { return _inum; }
 void FSNode::updateDataExtentLBA(const LBA_t& addr) { _dataLBA = addr; }
+void FSNode::chmod(mode_t m) { access.chmod(m); }
+mode_t FSNode::mod() const { return access.mod(); }
 void FSNode::print() const { cerr << "inum:" << inum() << " ref:" << refCount() << " dLBA:" << _dataLBA << endl; }
 #endif // FSNODE_H

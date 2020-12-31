@@ -23,6 +23,7 @@ public:
     void removeNode(const inum_t& parent, const inum_t& node); //remove the node whether it's a file-node or dir-node
     void createNode(const inum_t& parent, const string& name, const bool& isDirectory); //create a node under 'parent' whose type is specificed by isDirectory, parent must be a dir-node
     inline FSNode getInodeBase(const inum_t& inum);
+    void fsChmod(const inum_t& inum, const mode_t& m);
 #ifndef RELEASE
     void test();
 #endif

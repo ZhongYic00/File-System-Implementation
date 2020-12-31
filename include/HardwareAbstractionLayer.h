@@ -14,7 +14,7 @@ public:
     HardwareAbstractionLayer()
     {
         std::ifstream i("disk_save.dim", std::ios::binary);
-        //        i.read(reinterpret_cast<char*>(blockDevice), DEVICESIZE);
+        //i.read(reinterpret_cast<char*>(blockDevice), DEVICESIZE);
     }
     ~HardwareAbstractionLayer();
     int read(const LBA_t LBA, const LBA_t _length, const BytePtr _data) const; //read data at LBA of length _length(measured by block), write result to _data(size of _data must be more than _length)

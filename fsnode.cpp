@@ -22,7 +22,7 @@ FSNode::FSNode(const ByteArray& d)
     : _inum(*reinterpret_cast<inum_t*>(d[18]))
 {
     memcpy(&access, d.d_ptr(), sizeof(*this));
-    print();
+    //print();
 }
 FSNode::~FSNode()
 {

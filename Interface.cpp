@@ -82,7 +82,8 @@ static int fs_getattr(const char* path, struct stat* stbuf, struct fuse_file_inf
         auto file = parse(path, fa, s);
         if (s != "")
             return -2;
-        stbuf->st_mode = 0777 | (fs.getInodeBase(file).isDirectory() ? (S_IFDIR) : (S_IFREG));
+        auto node = fs.getInodeBase(file);
+        stbuf->st_mode = node.mod() | (node.isDirectory() ? (S_IFDIR) : (S_IFREG));
     } catch (const char* s) {
         cerr << s << endl;
         stbuf->st_mode = 0;
@@ -138,7 +139,11 @@ static int fs_read(const char* path, char* buf, size_t size, off_t offset, struc
     auto tmp = fs.readFile(parse(path, fa, s));
     if (!tmp.length())
         return 0;
+    BytePtr ttmp = new Byte[size];
+    memset(ttmp, 0, size);
+    memcpy(ttmp, tmp[0], std::min(tmp.length(), size));
     memcpy(buf, tmp[offset], size);
+    delete[] ttmp;
     return size;
 }
 static int fs_write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* fi)
@@ -158,7 +163,8 @@ static int fs_write(const char* path, const char* buf, size_t size, off_t offset
     memcpy(tmp, ori.d_ptr(), ori.length());
     memcpy(tmp + offset, buf, size);
     fs.writeFile(file, ByteArray(sz, tmp));
-    return 0;
+    delete[] tmp;
+    return size;
 }
 static int fs_access(const char* path, int)
 {
@@ -166,6 +172,20 @@ static int fs_access(const char* path, int)
 }
 static int fs_chmod(const char* path, mode_t mod, struct fuse_file_info* fi)
 {
+    cerr << endl
+         << "call fs_getattr" << endl;
+    string s = "";
+    inum_t fa = 0;
+    struct stat st;
+    try {
+        auto file = parse(path, fa, s);
+        if (s != "")
+            return -2;
+        fs.fsChmod(file, mod);
+    } catch (const char* s) {
+        cerr << s << endl;
+        return -2;
+    }
     return 0;
 }
 static int fs_mknod(const char* path, mode_t mod, dev_t dev)

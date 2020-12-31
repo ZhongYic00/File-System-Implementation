@@ -90,6 +90,7 @@ void FS::fsExit()
     Byte* superblockTmp = new Byte[SUPERBLOCK_SIZE_BYTE];
     memset(superblockTmp, 0, SUPERBLOCK_SIZE_BYTE);
     memcpy(superblockTmp, &superblock, SUPERBLOCK_REAL_SIZE);
+    //ByteArray(SUPERBLOCK_SIZE_BYTE, superblockTmp).print();
     HAL.write(SUPERBLOCK_LBA, superblockTmp, SUPERBLOCK_SIZE_BLK);
 }
 void FS::extentTreeSave()
@@ -273,7 +274,7 @@ list<pair<LBA_t, LBA_t>> FS::extentHeadAutoRead(LBA_t addr)
             rt.push_back({ standerizeLBA(addr), cur.first });
             addr = cur.second;
         } else {
-            rt.push_back({ standerizeLBA(addr), 1 });
+            rt.push_back({ standerizeLBA(addr), 0 });
             addr = 0;
         }
     } while (addr);
@@ -356,6 +357,7 @@ void FS::removeNodes(const inum_t& node)
         //release meta-data
         extentTree->releaseExtent(standerizeLBA(inodeMap->queryLBA(node)), 0);
         inodeMap->remove(node);
+        FSNode::freeNodeNum(node);
     } else {
         //here nd can only be a file-node, otherwise something must be wrong
         saveInode(*nd);
@@ -484,4 +486,13 @@ void FS::test()
     for (auto i : l) {
         cerr << i.addr << ' ' << i.name << endl;
     }
+}
+void FS::fsChmod(const inum_t& inum, const mode_t& m)
+{
+    FSNode inode(extentAutoRead(inodeMap->queryLBA(inum)));
+    if (!inode.isValid()) {
+        throw "inode read error";
+    }
+    inode.chmod(m);
+    saveInode(inode);
 }
